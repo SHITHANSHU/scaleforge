@@ -1,0 +1,1 @@
+Exponential backoff with jitter spreads retries over time and a retry budget bounds the extra load to a fraction of normal traffic. The server still has a deep queue of stale work, which a later exercise addresses with shedding.

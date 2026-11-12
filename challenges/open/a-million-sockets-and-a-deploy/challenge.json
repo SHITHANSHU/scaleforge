@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "a-million-sockets-and-a-deploy",
+  "title": "A million open connections and a deploy",
+  "category": "Scalability",
+  "level": "senior",
+  "estimatedMinutes": 30,
+  "tags": [
+    "persistent connections",
+    "reconnect storm",
+    "capacity planning",
+    "jitter"
+  ],
+  "summary": "Real-time chat reaches a million concurrent connections. Then a deploy drops all of them at once.",
+  "statement": {
+    "situation": "A real-time messaging product keeps one long-lived connection per active user. New connections arrive at about 8,000 per second and last around two minutes, so the fleet settles at close to a million simultaneous connections. Each gateway machine has a fixed amount of memory and can only complete so many new TLS handshakes per second. Every release restarts the gateways and drops every connection at once.",
+    "symptoms": [
+      "During a deploy the gateways report a surge of connection attempts many times their normal rate",
+      "Handshake capacity is saturated; most attempts fail and clients retry immediately",
+      "It takes minutes for the fleet to settle, and some gateways run out of memory"
+    ],
+    "requirements": [
+      "Hold roughly a million connections with memory headroom (under 90% full)",
+      "A deploy must not cause a reconnect storm (no more than 5,000 refused connection attempts per second)",
+      "Stay within budget"
+    ],
+    "constraints": [
+      "Budget: $5.00/hour",
+      "Gateway machine size, memory per connection and handshake rate are fixed",
+      "You can change how many gateways run and how clients behave when disconnected"
+    ]
+  },
+  "learningObjectives": [
+    "Connection capacity from memory and per-node limits",
+    "Accept-rate limits and reconnect storms",
+    "Jitter as load shaping",
+    "Sizing for failure and deploys, not just steady state"
+  ],
+  "references": [
+    {
+      "title": "Phoenix: the road to 2 million websocket connections",
+      "url": "https://www.phoenixframework.org/blog/the-road-to-2-million-websocket-connections"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "websocket",
+      "load-balancer",
+      "api-gateway"
+    ],
+    "budget": {
+      "maxCostPerHour": 5
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 1,
+          "payloadKB": 2,
+          "retries": 0,
+          "backoffMs": 100,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      }
+    ],
+    "kindDefaults": {
+      "websocket": {
+        "maxConnsPerNode": 60000,
+        "memoryPerConnKB": 20,
+        "memoryGiB": 4,
+        "acceptPerSecPerNode": 1500,
+        "sessionSec": 120,
+        "costPerNodeHour": 0.2,
+        "heartbeatSec": 30
+      }
+    },
+    "kindLocked": {
+      "websocket": [
+        "maxConnsPerNode",
+        "memoryPerConnKB",
+        "memoryGiB",
+        "acceptPerSecPerNode",
+        "sessionSec",
+        "costPerNodeHour"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "deploy",
+      "name": "Steady state, then a deploy at t=420 s",
+      "description": "8,000 new connections/s. At t=420 s every gateway restarts and all connections drop.",
+      "scenario": {
+        "name": "Deploy drops everyone",
+        "durationSec": 640,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 8000
+        },
+        "faults": [
+          {
+            "id": "deploy",
+            "kind": "deploy-restart",
+            "target": "kind:websocket",
+            "atSec": 420
+          }
+        ],
+        "tickMs": 50
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "capacity",
+      "label": "Memory under 90% before the deploy"
+    },
+    {
+      "id": "storm",
+      "label": "Refused connection attempts stay ≤ 5,000/s through the deploy"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

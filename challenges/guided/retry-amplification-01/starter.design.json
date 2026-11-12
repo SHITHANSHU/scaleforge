@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Retries that make it worse",
+  "name": "Retries that make it worse",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 3,
+        "backoffMs": 100,
+        "backoffMultiplier": 1,
+        "jitter": 0,
+        "retryBudgetPct": 100
+      }
+    },
+    {
+      "id": "app",
+      "kind": "ec2",
+      "x": 300,
+      "y": 120,
+      "config": {
+        "count": 2,
+        "vcpu": 5,
+        "memoryGiB": 1,
+        "burstable": false,
+        "creditsPerHour": 0,
+        "initialCredits": 0,
+        "networkMbps": 25000,
+        "cpuCostMs": 10,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 20000,
+        "costPerHourEach": 0.0116
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Burst then recovery",
+    "durationSec": 100,
+    "seed": 42,
+    "traffic": {
+      "type": "spike",
+      "baseRps": 700,
+      "spikeRps": 1500,
+      "atSec": 10,
+      "widthSec": 10
+    },
+    "faults": [],
+    "timeoutMs": 500
+  },
+  "updatedAt": 0
+}

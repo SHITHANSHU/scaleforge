@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "primary-loss",
+      "name": "Primary machine lost",
+      "scenario": {
+        "name": "Primary lost",
+        "durationSec": 180,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 8000
+        },
+        "faults": [
+          {
+            "id": "f",
+            "kind": "fail-node",
+            "target": "kind:replicated-db",
+            "atSec": 60,
+            "params": {
+              "index": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "higher-peak",
+      "name": "10% higher peak, replica lost",
+      "scenario": {
+        "name": "Higher peak",
+        "durationSec": 180,
+        "seed": 7,
+        "traffic": {
+          "type": "constant",
+          "rps": 8800
+        },
+        "faults": [
+          {
+            "id": "f",
+            "kind": "fail-node",
+            "target": "kind:replicated-db",
+            "atSec": 60,
+            "params": {
+              "index": 2
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "avail",
+      "label": "Overall availability ≥ 98.5%",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.availability",
+      "agg": "mean",
+      "op": ">=",
+      "value": 0.985,
+      "limit": 0.9
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 300 ms",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 20,
+      "op": "<=",
+      "value": 300,
+      "limit": 1500
+    },
+    {
+      "id": "stale",
+      "label": "Stale reads < 5%",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "replicated-db.staleReadRate",
+      "agg": "mean",
+      "op": "<",
+      "value": 0.05,
+      "limit": 0.3
+    },
+    {
+      "id": "write-recover",
+      "label": "Write downtime ≤ 40 s (primary loss)",
+      "hard": true,
+      "weight": 3,
+      "scenario": "primary-loss",
+      "metric": "replicated-db.downtimeSec",
+      "agg": "last",
+      "op": "<=",
+      "value": 40,
+      "limit": 120
+    },
+    {
+      "id": "cost",
+      "label": "Cost ≤ $3.5/h (target)",
+      "weight": 1,
+      "scenario": "peak-loss",
+      "metric": "e2e.costPerHour",
+      "agg": "last",
+      "op": "<=",
+      "value": 3.5,
+      "limit": 4
+    }
+  ]
+}

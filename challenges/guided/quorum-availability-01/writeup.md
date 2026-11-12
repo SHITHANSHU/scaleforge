@@ -1,0 +1,1 @@
+Quorum reads and writes overlap (2 + 2 > 3), so reads see the latest acknowledged write, and either survives one down replica. ALL tolerates none; ONE tolerates two but is eventually consistent. Latency also rises with the number of replicas you wait for.

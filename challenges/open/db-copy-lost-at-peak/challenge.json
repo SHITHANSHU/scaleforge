@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "db-copy-lost-at-peak",
+  "title": "A database copy dies at peak",
+  "category": "Database Reliability",
+  "level": "intermediate",
+  "estimatedMinutes": 25,
+  "tags": [
+    "availability",
+    "replication",
+    "stale reads",
+    "failover"
+  ],
+  "summary": "Black Friday traffic, and one of the database machines just disappeared.",
+  "statement": {
+    "situation": "Your shop's catalogue and checkout run against a database that has so far been a single machine. Traffic on peak days reaches 8,000 requests/s and about 90% are reads. Last year a machine failed at the worst moment: reads timed out, support was flooded with 'my order disappeared' reports, and the on-call engineer spent the evening deciding what to do.",
+    "symptoms": [
+      "Latency climbs and requests time out when a database machine is lost",
+      "Some customers see old data after changing something",
+      "Recovery depended on someone noticing and acting by hand"
+    ],
+    "requirements": [
+      "Stay available through the loss of a database machine at peak",
+      "Writes (orders) must resume quickly if the machine holding them fails",
+      "Customers should rarely see stale data"
+    ],
+    "constraints": [
+      "Database machines are a fixed size: you can add more, not make them bigger",
+      "Budget: $4.00/hour all-in",
+      "You decide how traffic reaches the database and what sits in front of it"
+    ]
+  },
+  "background": "Test your design under the peak with a lost machine. A second, unannounced test removes a different machine.",
+  "learningObjectives": [
+    "Capacity planning for N+1 failures",
+    "Replication lag and stale reads",
+    "Failover time and what it costs in write availability",
+    "Offloading reads versus adding copies"
+  ],
+  "references": [
+    {
+      "title": "PostgreSQL: high availability, load balancing, replication",
+      "url": "https://www.postgresql.org/docs/current/warm-standby.html"
+    },
+    {
+      "title": "AWS: Amazon RDS read replicas and Multi-AZ",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html"
+    },
+    {
+      "title": "Amazon Aurora replication",
+      "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Replication.html"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "load-balancer",
+      "app-service",
+      "redis",
+      "replicated-db",
+      "api-gateway"
+    ],
+    "budget": {
+      "maxCostPerHour": 4
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 0.9,
+          "payloadKB": 2,
+          "retries": 0,
+          "backoffMs": 100,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      }
+    ],
+    "kindDefaults": {
+      "replicated-db": {
+        "readQps": 6000,
+        "writeQps": 1500,
+        "applyQps": 3000,
+        "costPerNodeHour": 0.35
+      },
+      "app-service": {
+        "cpuMsPerReq": 4,
+        "vcpuPerPod": 2,
+        "startupSec": 40
+      },
+      "redis": {
+        "opsLimit": 80000
+      }
+    },
+    "kindLocked": {
+      "replicated-db": [
+        "readQps",
+        "writeQps",
+        "applyQps",
+        "costPerNodeHour"
+      ],
+      "app-service": [
+        "cpuMsPerReq",
+        "vcpuPerPod",
+        "startupSec"
+      ],
+      "redis": [
+        "opsLimit"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "peak-loss",
+      "name": "Peak with a lost replica",
+      "description": "8,000 req/s for 3 minutes. A database machine is lost after one minute.",
+      "scenario": {
+        "name": "Peak, replica lost",
+        "durationSec": 180,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 8000
+        },
+        "faults": [
+          {
+            "id": "f",
+            "kind": "fail-node",
+            "target": "kind:replicated-db",
+            "atSec": 60,
+            "params": {
+              "index": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "avail",
+      "label": "Requests succeed (≥ 98.5% over each run, counting the failover)"
+    },
+    {
+      "id": "latency",
+      "label": "p99 latency under 300 ms"
+    },
+    {
+      "id": "stale",
+      "label": "Stale reads stay rare (< 5%)"
+    },
+    {
+      "id": "write-recover",
+      "label": "Writes recover within 40 s if the primary is lost"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ],
+  "hints": [
+    "After losing a machine, what's the load on each survivor?",
+    "A database that fails can be replaced automatically; how long does that take?",
+    "Reads don't all have to reach the database."
+  ]
+}

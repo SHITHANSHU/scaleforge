@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "release-that-looked-fine",
+  "title": "The release that passed every check",
+  "category": "Deployment and Release Engineering",
+  "level": "advanced",
+  "estimatedMinutes": 30,
+  "tags": [
+    "canary",
+    "rollback",
+    "blue-green",
+    "blast radius",
+    "release engineering"
+  ],
+  "summary": "A new version shipped. Health checks are green. A quarter of requests are failing.",
+  "statement": {
+    "situation": "Your service handles 3,000 requests/s. A new release goes out at 1 minute in. Its health checks pass, but it quietly returns errors on a quarter of the requests it serves. Nobody notices until customers complain — unless your deployment process notices first.",
+    "symptoms": [
+      "Errors rise gradually as the rollout proceeds",
+      "Every instance reports healthy",
+      "By the time someone investigates, the whole fleet runs the bad version"
+    ],
+    "requirements": [
+      "Limit how many users ever see the bad version",
+      "Detect and undo the release automatically",
+      "Don't lose capacity (or money) just to deploy safely"
+    ],
+    "constraints": [
+      "Budget: $3.00/hour at peak (including extra capacity during a rollout)",
+      "New instances take 30 s to start",
+      "You can't make the new version better — only control how it's released"
+    ]
+  },
+  "learningObjectives": [
+    "Blast radius and exposure over time",
+    "Why health checks don't catch correctness regressions",
+    "Strategy trade-offs: rolling, canary, blue-green",
+    "Rollback speed and capacity during a rollback"
+  ],
+  "references": [
+    {
+      "title": "Kubernetes: Deployments (rolling update)",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    },
+    {
+      "title": "Kubernetes: liveness, readiness and startup probes",
+      "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "app-service",
+      "load-balancer",
+      "api-gateway"
+    ],
+    "budget": {
+      "maxCostPerHour": 3
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 1,
+          "payloadKB": 2,
+          "retries": 0,
+          "backoffMs": 100,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      }
+    ],
+    "kindDefaults": {
+      "app-service": {
+        "cpuMsPerReq": 10,
+        "vcpuPerPod": 2,
+        "startupSec": 30,
+        "costPerPodHour": 0.09
+      }
+    },
+    "kindLocked": {
+      "app-service": [
+        "cpuMsPerReq",
+        "vcpuPerPod",
+        "startupSec",
+        "costPerPodHour"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "bad",
+      "name": "Release with 25% errors at t=60 s",
+      "description": "3,000 req/s for 8 minutes. At t=60 s a release is rolled out. The new version fails 25% of the requests it handles.",
+      "scenario": {
+        "name": "Bad release",
+        "durationSec": 480,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 3000
+        },
+        "faults": [
+          {
+            "id": "rel",
+            "kind": "release",
+            "target": "kind:app-service",
+            "atSec": 60,
+            "params": {
+              "errPct": 25,
+              "latencyX": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "blast",
+      "label": "Total error volume stays small (≤ 1.5% of all requests)"
+    },
+    {
+      "id": "recover",
+      "label": "Fully healthy again within 3 minutes of the release"
+    },
+    {
+      "id": "capacity",
+      "label": "Capacity never dips enough to cause its own errors"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

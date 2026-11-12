@@ -1,0 +1,46 @@
+{
+  "id": "load-shedding-01",
+  "title": "Shed load before it queues",
+  "level": "senior",
+  "tags": [
+    "load shedding",
+    "queue age",
+    "api gateway"
+  ],
+  "summary": "A deep backlog turns overload into universal timeouts.",
+  "locked": [
+    "c",
+    "app"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.p99",
+      "op": "<",
+      "value": 500,
+      "after": 30,
+      "label": "p99 under 500 ms"
+    },
+    {
+      "metric": "e2e.availability",
+      "op": ">",
+      "value": 0.6,
+      "after": 30,
+      "label": "At least 60% of requests served"
+    }
+  ],
+  "hints": [
+    "Where would you put a component that can reject work early?",
+    "Reject by how long a request would wait, not by queue size.",
+    "An API gateway with 'shed load by queue age' enabled."
+  ],
+  "scenario": {
+    "name": "Sustained overload",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 1600
+    },
+    "faults": []
+  }
+}

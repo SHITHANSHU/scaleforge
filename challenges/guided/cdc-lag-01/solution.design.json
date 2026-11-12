@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Outbox + Debezium: WAL growing (solution)",
+  "name": "Outbox + Debezium: WAL growing (solution)",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "pg",
+      "kind": "postgres",
+      "x": 260,
+      "y": 120,
+      "config": {
+        "maxConnections": 100,
+        "readQps": 20000,
+        "writeQps": 20000,
+        "readReplicas": 0,
+        "indexes": 3,
+        "queryMs": 4,
+        "replicaLagBaseMs": 20
+      }
+    },
+    {
+      "id": "d",
+      "kind": "debezium",
+      "x": 520,
+      "y": 120,
+      "config": {
+        "snapshotMode": "never",
+        "tableRows": 5000000,
+        "snapshotRate": 20000,
+        "connectorRate": 4000,
+        "avgEventBytes": 600,
+        "walLimitGB": 50
+      }
+    },
+    {
+      "id": "k",
+      "kind": "kafka",
+      "x": 780,
+      "y": 120,
+      "config": {
+        "partitions": 6,
+        "replicationFactor": 3,
+        "retentionHours": 168,
+        "partitionRate": 10000,
+        "hotKeyShare": 0,
+        "consumers": 6,
+        "consumerRate": 5000,
+        "maxPollRecords": 500,
+        "commitMode": "auto",
+        "rebalancePauseSec": 5,
+        "produceLatencyMs": 5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "pg",
+      "toPort": "in",
+      "protocol": "tcp",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "pg",
+      "fromPort": "cdc",
+      "to": "d",
+      "toPort": "source",
+      "protocol": "cdc",
+      "latencyMs": 1
+    },
+    {
+      "id": "e3",
+      "from": "d",
+      "fromPort": "events",
+      "to": "k",
+      "toPort": "produce",
+      "protocol": "event-stream",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "2k writes/s",
+    "durationSec": 90,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 2000
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

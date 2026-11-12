@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "bigger",
+      "name": "A bigger burst (2,200 req/s for 15 s)",
+      "scenario": {
+        "name": "Bigger burst",
+        "durationSec": 160,
+        "seed": 4,
+        "traffic": {
+          "type": "spike",
+          "baseRps": 700,
+          "spikeRps": 2200,
+          "atSec": 20,
+          "widthSec": 15
+        },
+        "faults": [],
+        "timeoutMs": 500
+      }
+    },
+    {
+      "id": "twice",
+      "name": "Two bursts, 40 s apart",
+      "scenario": {
+        "name": "Two bursts",
+        "durationSec": 170,
+        "seed": 6,
+        "traffic": {
+          "type": "pulses",
+          "baseRps": 700,
+          "peakRps": 1600,
+          "firstAtSec": 20,
+          "widthSec": 10,
+          "everySec": 60,
+          "count": 2
+        },
+        "faults": [],
+        "timeoutMs": 500
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "recover",
+      "label": "Settles ≥ 98% within 40 s of the burst",
+      "hard": true,
+      "weight": 4,
+      "scenario": "blip",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 30,
+      "settle": 0.98,
+      "op": "<=",
+      "value": 40,
+      "limit": 120
+    },
+    {
+      "id": "recover-big",
+      "label": "Settles within 40 s of the bigger burst",
+      "hard": true,
+      "weight": 2,
+      "scenario": "bigger",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 35,
+      "settle": 0.98,
+      "op": "<=",
+      "value": 40,
+      "limit": 120
+    },
+    {
+      "id": "recover-twice",
+      "label": "Settles within 40 s of the second burst",
+      "hard": true,
+      "weight": 2,
+      "scenario": "twice",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 90,
+      "settle": 0.98,
+      "op": "<=",
+      "value": 40,
+      "limit": 120
+    },
+    {
+      "id": "retry",
+      "label": "Retries ≤ 1.5× offered",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.retryRatio",
+      "agg": "max",
+      "op": "<=",
+      "value": 1.5,
+      "limit": 4
+    },
+    {
+      "id": "steady",
+      "label": "p99 ≤ 300 ms in steady state",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 100,
+      "op": "<=",
+      "value": 300,
+      "limit": 2000
+    }
+  ]
+}

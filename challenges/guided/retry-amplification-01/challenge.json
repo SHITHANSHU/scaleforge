@@ -1,0 +1,49 @@
+{
+  "id": "retry-amplification-01",
+  "title": "Retries that make it worse",
+  "level": "mid",
+  "tags": [
+    "retries",
+    "backoff",
+    "jitter",
+    "retry budget"
+  ],
+  "summary": "A 10-second blip becomes a long outage because clients retry in lockstep.",
+  "locked": [
+    "app"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.retryRatio",
+      "op": "<",
+      "value": 1,
+      "label": "Retry traffic under 1× offered load"
+    },
+    {
+      "metric": "e2e.availability",
+      "op": ">",
+      "value": 0.97,
+      "after": 60,
+      "label": "Healthy again by 60 s"
+    }
+  ],
+  "hints": [
+    "Fixed-delay retries arrive in synchronized waves.",
+    "Backoff and jitter spread retries out; a retry budget caps them.",
+    "Try the 'Backoff + jitter + 10% budget' preset on the traffic source."
+  ],
+  "scenario": {
+    "name": "Burst then recovery",
+    "durationSec": 100,
+    "seed": 42,
+    "traffic": {
+      "type": "spike",
+      "baseRps": 700,
+      "spikeRps": 1500,
+      "atSec": 10,
+      "widthSec": 10
+    },
+    "faults": [],
+    "timeoutMs": 500
+  }
+}

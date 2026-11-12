@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "a-whole-region-disappears",
+  "title": "A whole region disappears",
+  "category": "Multi-region Architecture",
+  "level": "senior",
+  "estimatedMinutes": 45,
+  "tags": [
+    "multi-region",
+    "failover",
+    "RPO",
+    "RTO",
+    "data durability",
+    "DNS"
+  ],
+  "summary": "Region A goes dark. Users must keep working, and nothing they wrote may be lost.",
+  "statement": {
+    "situation": "Your application serves 4,000 requests/s (about 10% writes — orders and profile changes) from the primary region, Region A. A second region, Region B, exists but has never carried production traffic. At 90 seconds a power event takes Region A completely offline and it does not come back during the incident. The link between regions has an 80 ms round trip.",
+    "symptoms": [
+      "Every request fails until someone repoints traffic",
+      "The database in the dead region held the only copy of the most recent writes",
+      "When failover finally happens, users report missing orders"
+    ],
+    "requirements": [
+      "Return to ≥ 99% success within 60 seconds of the outage",
+      "Lose no more than 200 acknowledged writes",
+      "Keep p99 latency under 500 ms when serving from the surviving region"
+    ],
+    "constraints": [
+      "Budget: $8.00/hour for the whole deployment",
+      "Anything in a region goes down with it — place components deliberately",
+      "The users' entry point sits outside both regions",
+      "Cross-region calls pay the 80 ms round trip"
+    ]
+  },
+  "background": "Drag components into Region A or Region B. Edges that cross between regions add the round-trip time automatically.",
+  "learningObjectives": [
+    "Failure domains and static stability",
+    "RPO vs latency: synchronous vs asynchronous replication across regions",
+    "Failover detection and client caching delays",
+    "Active-passive vs active-active trade-offs"
+  ],
+  "references": [
+    {
+      "title": "AWS Builders' Library: Static stability using Availability Zones",
+      "url": "https://builder.aws.com/content/3K9SiqiJ369TGkkGzqPM95BuYWI/static-stability-using-availability-zones"
+    },
+    {
+      "title": "GitHub: October 21 post-incident analysis",
+      "url": "https://github.blog/news-insights/company-news/oct21-post-incident-analysis/"
+    },
+    {
+      "title": "AWS post-event summary: us-east-1, 19-20 Oct 2025 (DNS effects on recovery)",
+      "url": "https://aws.amazon.com/message/101925/"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "load-balancer",
+      "app-service",
+      "replicated-db",
+      "quorum-kv",
+      "api-gateway",
+      "redis"
+    ],
+    "budget": {
+      "maxCostPerHour": 8
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 260,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 0.9,
+          "payloadKB": 2,
+          "retries": 0,
+          "backoffMs": 100,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      },
+      {
+        "id": "regionA",
+        "kind": "boundary",
+        "label": "Region A",
+        "x": 220,
+        "y": 40,
+        "w": 560,
+        "h": 440
+      },
+      {
+        "id": "regionB",
+        "kind": "boundary",
+        "label": "Region B",
+        "x": 840,
+        "y": 40,
+        "w": 560,
+        "h": 440
+      }
+    ],
+    "kindDefaults": {
+      "app-service": {
+        "cpuMsPerReq": 6,
+        "vcpuPerPod": 2,
+        "startupSec": 30,
+        "costPerPodHour": 0.09,
+        "hpa": false
+      },
+      "replicated-db": {
+        "readQps": 6000,
+        "writeQps": 1500,
+        "applyQps": 3000,
+        "costPerNodeHour": 0.35
+      },
+      "quorum-kv": {
+        "nodeQps": 6000,
+        "costPerNodeHour": 0.35
+      }
+    },
+    "kindLocked": {
+      "app-service": [
+        "cpuMsPerReq",
+        "vcpuPerPod",
+        "startupSec",
+        "costPerPodHour"
+      ],
+      "replicated-db": [
+        "readQps",
+        "writeQps",
+        "applyQps",
+        "costPerNodeHour"
+      ],
+      "quorum-kv": [
+        "nodeQps",
+        "costPerNodeHour"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "region-loss",
+      "name": "Region A is lost at t=90 s",
+      "description": "4,000 req/s for 6 minutes. Region A goes offline at t=90 s and stays down. Cross-region round trip: 80 ms.",
+      "scenario": {
+        "name": "Region A lost",
+        "durationSec": 360,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 4000
+        },
+        "faults": [
+          {
+            "id": "regionA-down",
+            "kind": "kill-node",
+            "target": "regionA",
+            "atSec": 90
+          }
+        ],
+        "regionRttMs": 80
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "recover",
+      "label": "≥ 99% of requests succeed within 60 s of the outage"
+    },
+    {
+      "id": "rpo",
+      "label": "At most 200 acknowledged writes lost"
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 500 ms afterwards"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

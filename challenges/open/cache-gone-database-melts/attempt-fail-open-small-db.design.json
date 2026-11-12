@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "cache-gone-database-melts-fail-open-small-db",
+  "name": "When the cache disappears (fail-open-small-db)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 0.95,
+        "payloadKB": 2,
+        "retries": 2,
+        "backoffMs": 150,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 220
+    },
+    {
+      "id": "app",
+      "kind": "app-service",
+      "config": {
+        "pods": 12,
+        "maxPods": 40,
+        "vcpuPerPod": 2,
+        "cpuMsPerReq": 3,
+        "startupSec": 40,
+        "queueLimit": 400,
+        "costPerPodHour": 0.09,
+        "hpa": false,
+        "hpaMetric": "cpu",
+        "hpaTarget": 0.6,
+        "hpaCooldownSec": 30,
+        "maxStepPods": 4,
+        "scaleDownDelaySec": 120,
+        "strategy": "rolling",
+        "maxSurgePct": 25,
+        "canaryPct": 10,
+        "canaryHoldSec": 60,
+        "autoRollback": false,
+        "rollbackErrorPct": 5,
+        "detectSec": 30,
+        "gracefulSec": 15,
+        "cacheFallback": true
+      },
+      "x": 260,
+      "y": 220
+    },
+    {
+      "id": "r",
+      "kind": "redis",
+      "config": {
+        "memoryMB": 4096,
+        "evictionPolicy": "allkeys-lru",
+        "ttlSec": 300,
+        "keyspace": 300000,
+        "avgItemKB": 2,
+        "zipfSkew": 1.2,
+        "opsLimit": 80000,
+        "maxClients": 10000,
+        "baseLatencyMs": 0.5,
+        "costPerGBHour": 0.12
+      },
+      "x": 520,
+      "y": 120
+    },
+    {
+      "id": "db",
+      "kind": "replicated-db",
+      "config": {
+        "replicas": 1,
+        "replication": "async",
+        "syncCopies": 1,
+        "syncRttMs": 2,
+        "shipLagSec": 0.3,
+        "readRouting": "replicas",
+        "maxStalenessSec": 2,
+        "writeLocalitySec": 5,
+        "readQps": 5000,
+        "writeQps": 1500,
+        "applyQps": 3000,
+        "queryMs": 4,
+        "maxConnections": 400,
+        "poolMultiplex": 1,
+        "queueDuringFailover": false,
+        "queueLimit": 20000,
+        "failover": "auto",
+        "detectSec": 10,
+        "manualResponseSec": 300,
+        "promoteSec": 15,
+        "fencing": true,
+        "dataGB": 200,
+        "restoreMBps": 100,
+        "replayQps": 8000,
+        "snapshotIntervalSec": 600,
+        "walArchive": false,
+        "backupVerification": false,
+        "replicaPlacement": "same-region",
+        "costPerNodeHour": 0.35
+      },
+      "x": 780,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "app",
+      "fromPort": "cache",
+      "to": "r",
+      "toPort": "in",
+      "protocol": "cache-access",
+      "latencyMs": 1
+    },
+    {
+      "id": "e3",
+      "from": "app",
+      "fromPort": "db",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    },
+    {
+      "id": "e4",
+      "from": "r",
+      "fromPort": "miss",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Cache outage",
+    "durationSec": 420,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 6000
+    },
+    "faults": [
+      {
+        "id": "down",
+        "kind": "kill-node",
+        "target": "kind:redis",
+        "atSec": 60,
+        "untilSec": 300
+      },
+      {
+        "id": "cold",
+        "kind": "flush-cache",
+        "target": "kind:redis",
+        "atSec": 300
+      }
+    ]
+  },
+  "updatedAt": 0
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "deploy-late",
+      "name": "Higher arrival rate (9,000/s), later deploy",
+      "scenario": {
+        "name": "Deploy, higher load",
+        "durationSec": 700,
+        "seed": 5,
+        "traffic": {
+          "type": "constant",
+          "rps": 9000
+        },
+        "faults": [
+          {
+            "id": "deploy",
+            "kind": "deploy-restart",
+            "target": "kind:websocket",
+            "atSec": 480
+          }
+        ],
+        "tickMs": 50
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "memory",
+      "label": "Memory ≤ 90% before the deploy",
+      "hard": true,
+      "weight": 3,
+      "scenario": "all",
+      "metric": "websocket.memory",
+      "agg": "max",
+      "before": 400,
+      "op": "<=",
+      "value": 0.9,
+      "limit": 1.5
+    },
+    {
+      "id": "storm",
+      "label": "Refused attempts ≤ 5,000/s",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "websocket.rejected",
+      "agg": "max",
+      "after": 120,
+      "op": "<=",
+      "value": 5000,
+      "limit": 200000
+    },
+    {
+      "id": "avail",
+      "label": "Availability ≥ 97%",
+      "weight": 3,
+      "scenario": "all",
+      "metric": "e2e.availability",
+      "agg": "mean",
+      "after": 120,
+      "op": ">=",
+      "value": 0.97,
+      "limit": 0.5
+    }
+  ]
+}

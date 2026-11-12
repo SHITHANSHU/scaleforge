@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Cache-aside for a read-heavy API (solution)",
+  "name": "Cache-aside for a read-heavy API (solution)",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0.95,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "app",
+      "kind": "ec2",
+      "x": 260,
+      "y": 120,
+      "label": "API",
+      "config": {
+        "count": 8,
+        "vcpu": 2,
+        "memoryGiB": 1,
+        "burstable": false,
+        "creditsPerHour": 0,
+        "initialCredits": 0,
+        "networkMbps": 750,
+        "cpuCostMs": 3,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 500,
+        "costPerHourEach": 0.0116
+      }
+    },
+    {
+      "id": "r",
+      "kind": "redis",
+      "x": 520,
+      "y": 120,
+      "config": {
+        "memoryMB": 512,
+        "evictionPolicy": "allkeys-lru",
+        "ttlSec": 300,
+        "keyspace": 50000,
+        "avgItemKB": 1,
+        "zipfSkew": 1,
+        "opsLimit": 80000,
+        "maxClients": 10000,
+        "baseLatencyMs": 0.5
+      }
+    },
+    {
+      "id": "db",
+      "kind": "postgres",
+      "x": 780,
+      "y": 120,
+      "config": {
+        "maxConnections": 100,
+        "readQps": 1500,
+        "writeQps": 600,
+        "readReplicas": 0,
+        "indexes": 3,
+        "queryMs": 4,
+        "replicaLagBaseMs": 20
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "app",
+      "fromPort": "out",
+      "to": "r",
+      "toPort": "in",
+      "protocol": "cache-access",
+      "latencyMs": 1
+    },
+    {
+      "id": "e3",
+      "from": "r",
+      "fromPort": "miss",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "4k rps, 95% reads",
+    "durationSec": 90,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 4000
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

@@ -1,0 +1,5 @@
+The failure that hurts is not the loss of one machine, it is what the survivors do next. At 8,000 req/s with 90% reads, a single database machine cannot serve the reads, so any design that leans on one or two copies collapses the moment one disappears. Two levers work: add enough copies that the survivors can absorb the load (N+1 sizing), or stop most reads reaching the database at all with a cache.
+
+Failover is the second half. Automatic promotion with a short detection time keeps the write outage to tens of seconds; waiting for a human costs minutes. Synchronous replication removes data loss on promotion at the price of commit latency, but is not needed to pass here.
+
+Stale reads come from replica lag: spreading reads over replicas is cheap but can show old data, while lag-aware routing falls back to the primary when a replica is behind. Several designs pass: more replicas with lag-aware routing, a cache plus fewer replicas, or a mix. What they trade is cost, staleness and how much work the primary carries.

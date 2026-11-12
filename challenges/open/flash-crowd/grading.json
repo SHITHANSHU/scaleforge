@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "ramp",
+      "name": "Faster, bigger spike (11,000 req/s)",
+      "scenario": {
+        "name": "Bigger spike",
+        "durationSec": 270,
+        "seed": 9,
+        "traffic": {
+          "type": "step",
+          "baseRps": 700,
+          "stepRps": 11000,
+          "atSec": 25
+        },
+        "faults": [],
+        "timeoutMs": 1500
+      }
+    },
+    {
+      "id": "double",
+      "name": "Spike, brief lull, second spike",
+      "scenario": {
+        "name": "Double spike",
+        "durationSec": 300,
+        "seed": 11,
+        "traffic": {
+          "type": "spike",
+          "baseRps": 600,
+          "spikeRps": 9000,
+          "atSec": 30,
+          "widthSec": 80
+        },
+        "faults": [],
+        "timeoutMs": 1500
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "avail",
+      "label": "Availability ≥ 85% during the spike",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.availability",
+      "agg": "mean",
+      "after": 40,
+      "op": ">=",
+      "value": 0.85,
+      "limit": 0.4
+    },
+    {
+      "id": "recover",
+      "label": "Healthy again (≥ 97%) within 120 s of the spike",
+      "hard": true,
+      "weight": 3,
+      "scenario": "promo",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 30,
+      "settle": 0.97,
+      "op": "<=",
+      "value": 120,
+      "limit": 240
+    },
+    {
+      "id": "retry",
+      "label": "Retry traffic ≤ 1× offered load",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.retryRatio",
+      "agg": "max",
+      "op": "<=",
+      "value": 1,
+      "limit": 2
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 1.2 s after warm-up",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 90,
+      "before": 250,
+      "op": "<=",
+      "value": 1200,
+      "limit": 3000
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "a-million-sockets-and-a-deploy-no-jitter",
+  "name": "A million open connections and a deploy (no-jitter)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 220
+    },
+    {
+      "id": "ws",
+      "kind": "websocket",
+      "config": {
+        "nodes": 20,
+        "maxConnsPerNode": 60000,
+        "memoryPerConnKB": 20,
+        "memoryGiB": 4,
+        "heartbeatSec": 30,
+        "sessionSec": 120,
+        "acceptPerSecPerNode": 1500,
+        "reconnectJitterSec": 0,
+        "costPerNodeHour": 0.2
+      },
+      "x": 400,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "ws",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Deploy drops everyone",
+    "durationSec": 640,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 8000
+    },
+    "faults": [
+      {
+        "id": "deploy",
+        "kind": "deploy-restart",
+        "target": "kind:websocket",
+        "atSec": 420
+      }
+    ],
+    "tickMs": 50
+  },
+  "updatedAt": 0
+}

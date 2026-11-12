@@ -1,0 +1,1 @@
+Put Redis between the app and Postgres. With a Zipf-skewed catalog, a cache that holds the hot set answers most reads, so the DB only sees misses and writes. Trade-off: staleness up to the TTL and an extra tier to run.

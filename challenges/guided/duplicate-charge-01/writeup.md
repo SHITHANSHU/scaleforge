@@ -1,0 +1,1 @@
+An idempotency store in front of the payment service absorbs repeats within its retention window. The window must exceed the longest duplicate delay. This gives effectively-once execution at this boundary, not exactly-once delivery.

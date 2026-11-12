@@ -1,0 +1,57 @@
+{
+  "id": "quorum-availability-01",
+  "title": "Survive a node loss without going stale",
+  "level": "mid",
+  "tags": [
+    "quorum",
+    "consistency level",
+    "availability"
+  ],
+  "summary": "Pick consistency levels that tolerate a node failure and stay consistent.",
+  "locked": [
+    "c",
+    "kv.nodes",
+    "kv.rf"
+  ],
+  "criteria": [
+    {
+      "metric": "quorum-kv.availability",
+      "op": ">",
+      "value": 0.99,
+      "after": 10,
+      "label": "Operations succeed (>99%) with a node down"
+    },
+    {
+      "metric": "quorum-kv.staleReadRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 10,
+      "label": "No stale reads"
+    }
+  ],
+  "hints": [
+    "With RF=3, how many replicas does ALL need? Quorum?",
+    "R + W > RF guarantees reads see the latest write.",
+    "Quorum reads and writes tolerate one node down at RF=3."
+  ],
+  "scenario": {
+    "name": "One node fails",
+    "durationSec": 30,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 2000
+    },
+    "faults": [
+      {
+        "id": "f",
+        "kind": "fail-node",
+        "target": "kv",
+        "atSec": 5,
+        "params": {
+          "index": 0
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "late",
+      "name": "Outage at 5,000 req/s, later in the run",
+      "scenario": {
+        "name": "Late outage",
+        "durationSec": 400,
+        "seed": 12,
+        "traffic": {
+          "type": "constant",
+          "rps": 5000
+        },
+        "faults": [
+          {
+            "id": "regionA-down",
+            "kind": "kill-node",
+            "target": "regionA",
+            "atSec": 150
+          }
+        ],
+        "regionRttMs": 80
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "recover",
+      "label": "≥ 99% success within 60 s of the outage",
+      "hard": true,
+      "weight": 4,
+      "scenario": "region-loss",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 90,
+      "settle": 0.99,
+      "op": "<=",
+      "value": 60,
+      "limit": 180
+    },
+    {
+      "id": "recover-late",
+      "label": "…and in the later outage",
+      "hard": true,
+      "weight": 2,
+      "scenario": "late",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 150,
+      "settle": 0.99,
+      "op": "<=",
+      "value": 60,
+      "limit": 180
+    },
+    {
+      "id": "rpo",
+      "label": "Lost writes ≤ 200",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "replicated-db.dataLoss",
+      "agg": "last",
+      "nodeAgg": "sum",
+      "op": "<=",
+      "value": 200,
+      "limit": 5000
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 500 ms after recovery",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 200,
+      "op": "<=",
+      "value": 500,
+      "limit": 2000
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+@import "uplot/dist/uPlot.min.css";
+
+/* Design tokens. Dark is the default; light overrides. */
+:root {
+  --bg: #0e0f12; --surface: #15171c; --raised: #1b1e25; --hover: #22262e;
+  --line: #262a33; --line-strong: #353b47;
+  --text: #e6e8ec; --muted: #9aa1ad; --faint: #8a919d;
+  --accent: #f59e0b; --accent-fg: #1a1205; --accent-soft: rgba(245,158,11,.14);
+  --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --info: #60a5fa;
+  --grid: #1c1f26;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: #f6f5f1; --surface: #fbfaf7; --raised: #ffffff; --hover: #eeece6;
+  --line: #e2dfd6; --line-strong: #cfcbbf;
+  --text: #1c1b18; --muted: #5f5c52; --faint: #6b6759;
+  --accent: #b45309; --accent-fg: #fff; --accent-soft: rgba(180,83,9,.1);
+  --ok: #15803d; --warn: #a16207; --bad: #b91c1c; --info: #1d4ed8;
+  --grid: #e6e3da;
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg); --color-surface: var(--surface); --color-raised: var(--raised); --color-hover: var(--hover);
+  --color-line: var(--line); --color-line-strong: var(--line-strong);
+  --color-fg: var(--text); --color-muted: var(--muted); --color-faint: var(--faint);
+  --color-accent: var(--accent); --color-accent-fg: var(--accent-fg); --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok); --color-warn: var(--warn); --color-bad: var(--bad); --color-info: var(--info);
+  --font-sans: var(--font-sans); --font-mono: var(--font-mono);
+}
+
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 var(--font-sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
+::selection { background: var(--accent-soft); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+input:focus-visible, select:focus-visible { outline: 2px solid var(--accent) !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* React Flow theming */
+.react-flow { --xy-background-color: var(--bg); --xy-edge-stroke-default: var(--line-strong); }
+.react-flow__minimap { background: var(--surface) !important; border: 1px solid var(--line); border-radius: 8px; }
+.react-flow__controls { box-shadow: none; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.react-flow__controls-button { background: var(--surface); border-bottom: 1px solid var(--line); fill: var(--muted); }
+.react-flow__controls-button:hover { background: var(--hover); }
+.react-flow__handle { width: 10px; height: 10px; border: 2px solid var(--bg); }
+.react-flow__node-group { background: transparent; }
+.react-flow__selection { background: var(--accent-soft); border: 1px solid var(--accent); }
+
+@keyframes flow-dash { to { stroke-dashoffset: -24; } }
+.edge-flow { animation: flow-dash linear infinite; }
+@keyframes pulse-bad { 0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,.0);} 50% { box-shadow: 0 0 0 4px rgba(248,113,113,.25);} }
+.pulse-bad { animation: pulse-bad 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .edge-flow, .pulse-bad { animation: none !important; } * { transition: none !important; } }
+
+.uplot, .u-legend { font-family: var(--font-mono); }
+.u-legend { display: none; }

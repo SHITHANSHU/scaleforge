@@ -1,0 +1,47 @@
+{
+  "id": "replica-lag-01",
+  "title": "Reads that show old data",
+  "level": "mid",
+  "tags": [
+    "replication",
+    "stale reads",
+    "read routing"
+  ],
+  "summary": "Users don't see their own updates after a write burst.",
+  "locked": [
+    "c",
+    "db.replicas",
+    "db.applyQps"
+  ],
+  "criteria": [
+    {
+      "metric": "replicated-db.staleReadRate",
+      "op": "<",
+      "value": 0.05,
+      "after": 20,
+      "label": "Stale reads under 5%"
+    },
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 20,
+      "label": "Errors under 1%"
+    }
+  ],
+  "hints": [
+    "Which read-routing option never reads from a lagging copy?",
+    "Routing every read to the primary is always fresh — what does it cost?",
+    "Lag-aware routing falls back to the primary only when a replica is behind."
+  ],
+  "scenario": {
+    "name": "Write burst",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 3000
+    },
+    "faults": []
+  }
+}

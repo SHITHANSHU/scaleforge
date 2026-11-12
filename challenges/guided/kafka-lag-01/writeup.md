@@ -1,0 +1,1 @@
+Parallelism is capped by partitions: one consumer per partition, so 6 consumers max. To reach 50k/s each consumer must do ≥ 8.4k/s — make processing faster (batching, lighter handlers). Alternative outside this lock: add partitions. Trade-off: partition count is hard to reduce later.

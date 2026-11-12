@@ -1,0 +1,1 @@
+A gateway that rejects requests older than a bound keeps the queue short, so the requests it does serve are fast. Rejecting 37% of traffic is better than slowing everyone down. Trade-off: some callers see errors immediately and must handle them.

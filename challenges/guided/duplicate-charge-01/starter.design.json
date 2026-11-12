@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Stop the double charge",
+  "name": "Stop the double charge",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0,
+        "payloadKB": 2,
+        "retries": 2,
+        "backoffMs": 200,
+        "backoffMultiplier": 1,
+        "jitter": 0,
+        "retryBudgetPct": 100
+      }
+    },
+    {
+      "id": "pay",
+      "kind": "ec2",
+      "x": 400,
+      "y": 120,
+      "config": {
+        "count": 4,
+        "vcpu": 4,
+        "memoryGiB": 1,
+        "burstable": false,
+        "creditsPerHour": 0,
+        "initialCredits": 0,
+        "networkMbps": 25000,
+        "cpuCostMs": 5,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 500,
+        "costPerHourEach": 0.0116
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "pay",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Slow payment provider",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 300
+    },
+    "faults": [
+      {
+        "id": "slow",
+        "kind": "edge-latency",
+        "target": "e1",
+        "atSec": 5,
+        "untilSec": 25,
+        "params": {
+          "addMs": 900
+        }
+      }
+    ],
+    "timeoutMs": 600
+  },
+  "updatedAt": 0
+}

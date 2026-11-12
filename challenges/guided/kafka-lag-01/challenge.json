@@ -1,0 +1,46 @@
+{
+  "id": "kafka-lag-01",
+  "title": "Consumer lag: 50k/s into 6 partitions",
+  "level": "senior",
+  "tags": [
+    "kafka",
+    "consumer-group",
+    "throughput"
+  ],
+  "summary": "Lag grows without bound.",
+  "locked": [
+    "k.partitions",
+    "c"
+  ],
+  "criteria": [
+    {
+      "metric": "kafka.lagMax",
+      "op": "<",
+      "value": 10000,
+      "after": 60,
+      "label": "Max partition lag under 10,000"
+    },
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 20,
+      "label": "Errors under 1%"
+    }
+  ],
+  "hints": [
+    "How many consumers can one partition have?",
+    "Total capacity is active consumers × per-consumer rate.",
+    "Partitions are locked — what else is tunable?"
+  ],
+  "scenario": {
+    "name": "50k msg/s",
+    "durationSec": 90,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 50000
+    },
+    "faults": []
+  }
+}

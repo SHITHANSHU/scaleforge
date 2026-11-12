@@ -1,0 +1,4 @@
+{ "name": "Legacy design", "nodes": [
+  { "id": "c", "kind": "client", "config": { "share": 100, "readRatio": 0.9, "payloadKB": 2 }, "x": 0, "y": 0 },
+  { "id": "r", "kind": "redis", "config": { "memoryMB": 256 }, "x": 200, "y": 0 } ],
+  "edges": [] }

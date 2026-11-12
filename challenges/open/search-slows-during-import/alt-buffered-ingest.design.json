@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "search-slows-during-import-buffered-ingest",
+  "name": "Search is fast — until the catalogue import runs (buffered-ingest)",
+  "nodes": [
+    {
+      "id": "shoppers",
+      "kind": "client",
+      "label": "Shoppers (queries)",
+      "config": {
+        "share": 6,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 140
+    },
+    {
+      "id": "importer",
+      "kind": "client",
+      "label": "Catalog import (documents)",
+      "config": {
+        "share": 60,
+        "readRatio": 0,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 320
+    },
+    {
+      "id": "catalog",
+      "kind": "search-cluster",
+      "label": "Product search",
+      "config": {
+        "dataNodes": 4,
+        "shards": 8,
+        "replicas": 1,
+        "docsMillions": 20,
+        "nodeCpu": 8,
+        "queryCostMs": 0.8,
+        "heavyQueryPct": 6,
+        "heavyMultiplier": 12,
+        "perShardOverheadMs": 0.15,
+        "indexCostMs": 0.6,
+        "refreshSec": 10,
+        "queueLimit": 2000,
+        "costPerNodeHour": 0.5
+      },
+      "x": 700,
+      "y": 220
+    },
+    {
+      "id": "buf",
+      "kind": "kafka",
+      "config": {
+        "partitions": 6,
+        "replicationFactor": 3,
+        "retentionHours": 168,
+        "partitionRate": 10000,
+        "hotKeyShare": 0,
+        "consumers": 3,
+        "consumerRate": 2000,
+        "maxPollRecords": 500,
+        "commitMode": "manual",
+        "commitIntervalSec": 5,
+        "retryOnFailure": true,
+        "costBaseHour": 0.6,
+        "costPerConsumerHour": 0.05,
+        "rebalancePauseSec": 5,
+        "produceLatencyMs": 5
+      },
+      "x": 300,
+      "y": 360
+    }
+  ],
+  "edges": [
+    {
+      "id": "fx-q",
+      "from": "shoppers",
+      "fromPort": "out",
+      "to": "catalog",
+      "toPort": "query",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e1",
+      "from": "importer",
+      "fromPort": "out",
+      "to": "buf",
+      "toPort": "produce",
+      "protocol": "tcp",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "buf",
+      "fromPort": "consume",
+      "to": "catalog",
+      "toPort": "index",
+      "protocol": "event-stream",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Feed running",
+    "durationSec": 300,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 10000
+    },
+    "faults": [],
+    "tickMs": 20
+  },
+  "updatedAt": 0
+}

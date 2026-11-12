@@ -1,0 +1,45 @@
+{
+  "id": "cache-aside-01",
+  "title": "Cache-aside for a read-heavy API",
+  "level": "mid",
+  "tags": [
+    "redis",
+    "cache",
+    "database"
+  ],
+  "summary": "The database can't keep up with 4,000 reads/s.",
+  "locked": [
+    "db"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 45,
+      "label": "Errors under 1%"
+    },
+    {
+      "metric": "postgres.utilization",
+      "op": "<",
+      "value": 0.8,
+      "after": 45,
+      "label": "DB below 80% utilization"
+    }
+  ],
+  "hints": [
+    "Which tier is saturating first? Check Bottlenecks.",
+    "Reads can be answered from memory. Where does a cache go?",
+    "Does the working set fit in the cache's memory?"
+  ],
+  "scenario": {
+    "name": "4k rps, 95% reads",
+    "durationSec": 90,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 4000
+    },
+    "faults": []
+  }
+}

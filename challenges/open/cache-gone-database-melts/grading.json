@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "longer",
+      "name": "Outage at 8,000 req/s",
+      "scenario": {
+        "name": "Cache outage, higher load",
+        "durationSec": 420,
+        "seed": 5,
+        "traffic": {
+          "type": "constant",
+          "rps": 8000
+        },
+        "faults": [
+          {
+            "id": "down",
+            "kind": "kill-node",
+            "target": "kind:redis",
+            "atSec": 50,
+            "untilSec": 280
+          },
+          {
+            "id": "cold",
+            "kind": "flush-cache",
+            "target": "kind:redis",
+            "atSec": 280
+          }
+        ]
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "avail",
+      "label": "Availability during the outage ≥ 80%",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.availability",
+      "agg": "mean",
+      "after": 75,
+      "before": 270,
+      "op": ">=",
+      "value": 0.8,
+      "limit": 0.3
+    },
+    {
+      "id": "recover",
+      "label": "Settles ≥ 98% within 90 s of cache return",
+      "hard": true,
+      "weight": 3,
+      "scenario": "outage",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 300,
+      "settle": 0.98,
+      "op": "<=",
+      "value": 90,
+      "limit": 200
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 800 ms",
+      "weight": 2,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 75,
+      "before": 270,
+      "op": "<=",
+      "value": 800,
+      "limit": 4000
+    },
+    {
+      "id": "retry",
+      "label": "Retry load ≤ 1× offered",
+      "weight": 1,
+      "scenario": "all",
+      "metric": "e2e.retryRatio",
+      "agg": "max",
+      "op": "<=",
+      "value": 1,
+      "limit": 2.5
+    }
+  ]
+}

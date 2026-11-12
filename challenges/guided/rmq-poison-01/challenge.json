@@ -1,0 +1,46 @@
+{
+  "id": "rmq-poison-01",
+  "title": "Poison message loop in RabbitMQ",
+  "level": "senior",
+  "tags": [
+    "rabbitmq",
+    "dlx",
+    "retries"
+  ],
+  "summary": "A few bad messages eat all consumer capacity.",
+  "locked": [
+    "c",
+    "q.consumers",
+    "q.consumerRate"
+  ],
+  "criteria": [
+    {
+      "metric": "rabbitmq.ready",
+      "op": "<",
+      "value": 2000,
+      "after": 30,
+      "label": "Backlog under 2,000"
+    },
+    {
+      "metric": "rabbitmq.dlq",
+      "op": ">",
+      "value": 1,
+      "after": 40,
+      "label": "Bad messages are dead-lettered"
+    }
+  ],
+  "hints": [
+    "What happens to a message that always fails and is requeued?",
+    "Which RabbitMQ feature parks failed messages?"
+  ],
+  "scenario": {
+    "name": "1.5k msg/s, 8% poison",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 1500
+    },
+    "faults": []
+  }
+}

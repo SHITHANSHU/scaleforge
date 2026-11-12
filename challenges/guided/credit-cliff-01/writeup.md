@@ -1,0 +1,1 @@
+Sustained 320 rps needs ~1.6 vCPU of work. Burstable instances only provide 20% baseline per vCPU once credits are gone, so a fixed-performance instance is both safer and, at this load, within budget. Trade-off: you lose burst-price savings for spiky workloads.

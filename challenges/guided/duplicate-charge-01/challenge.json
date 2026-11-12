@@ -1,0 +1,50 @@
+{
+  "id": "duplicate-charge-01",
+  "title": "Stop the double charge",
+  "level": "senior",
+  "tags": [
+    "idempotency",
+    "dedup window",
+    "at-least-once"
+  ],
+  "summary": "Timeouts and retries cause duplicate payments.",
+  "locked": [
+    "c",
+    "pay"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.duplicateRate",
+      "op": "<",
+      "value": 0.001,
+      "label": "Duplicates under 0.1%"
+    }
+  ],
+  "hints": [
+    "The client times out, retries, and the original may still complete.",
+    "Remember recent request keys and answer repeats from memory.",
+    "How long must a key be kept? Longer than the longest retry delay."
+  ],
+  "scenario": {
+    "name": "Slow payment provider",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 300
+    },
+    "faults": [
+      {
+        "id": "slow",
+        "kind": "edge-latency",
+        "target": "e1",
+        "atSec": 5,
+        "untilSec": 25,
+        "params": {
+          "addMs": 900
+        }
+      }
+    ],
+    "timeoutMs": 600
+  }
+}

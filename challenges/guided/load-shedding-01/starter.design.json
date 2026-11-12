@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Shed load before it queues",
+  "name": "Shed load before it queues",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      }
+    },
+    {
+      "id": "app",
+      "kind": "ec2",
+      "x": 400,
+      "y": 120,
+      "config": {
+        "count": 2,
+        "vcpu": 5,
+        "memoryGiB": 1,
+        "burstable": false,
+        "creditsPerHour": 0,
+        "initialCredits": 0,
+        "networkMbps": 25000,
+        "cpuCostMs": 10,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 100000,
+        "costPerHourEach": 0.0116
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Sustained overload",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 1600
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

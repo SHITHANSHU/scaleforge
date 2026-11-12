@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "search-slows-during-import-reference",
+  "name": "Search is fast — until the catalogue import runs (reference)",
+  "nodes": [
+    {
+      "id": "shoppers",
+      "kind": "client",
+      "label": "Shoppers (queries)",
+      "config": {
+        "share": 6,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 140
+    },
+    {
+      "id": "importer",
+      "kind": "client",
+      "label": "Catalog import (documents)",
+      "config": {
+        "share": 60,
+        "readRatio": 0,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 320
+    },
+    {
+      "id": "catalog",
+      "kind": "search-cluster",
+      "label": "Product search",
+      "config": {
+        "dataNodes": 5,
+        "shards": 8,
+        "replicas": 1,
+        "docsMillions": 20,
+        "nodeCpu": 8,
+        "queryCostMs": 0.8,
+        "heavyQueryPct": 6,
+        "heavyMultiplier": 12,
+        "perShardOverheadMs": 0.15,
+        "indexCostMs": 0.6,
+        "refreshSec": 5,
+        "queueLimit": 2000,
+        "costPerNodeHour": 0.5
+      },
+      "x": 700,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "fx-q",
+      "from": "shoppers",
+      "fromPort": "out",
+      "to": "catalog",
+      "toPort": "query",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "fx-i",
+      "from": "importer",
+      "fromPort": "out",
+      "to": "catalog",
+      "toPort": "index",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Feed running",
+    "durationSec": 300,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 10000
+    },
+    "faults": [],
+    "tickMs": 20
+  },
+  "updatedAt": 0
+}

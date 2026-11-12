@@ -1,0 +1,41 @@
+{
+  "id": "credit-cliff-01",
+  "title": "Flash sale on a t2 fleet",
+  "level": "senior",
+  "tags": [
+    "ec2",
+    "cpu-credits",
+    "cost"
+  ],
+  "summary": "Fine for ten minutes, then throttled.",
+  "locked": [
+    "c"
+  ],
+  "budget": {
+    "maxCostPerHour": 0.5
+  },
+  "criteria": [
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 200,
+      "label": "Errors under 1% late in the sale"
+    }
+  ],
+  "hints": [
+    "Look at CPU credits per instance over time.",
+    "Baseline for a t2.small is 20%. What's the sustained load?",
+    "Budget is $0.50/h. Compare burstable vs fixed-performance cost."
+  ],
+  "scenario": {
+    "name": "320 rps sustained",
+    "durationSec": 900,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 320
+    },
+    "faults": []
+  }
+}

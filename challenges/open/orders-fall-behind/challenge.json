@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "orders-fall-behind",
+  "title": "Orders are piling up, and some are charged twice",
+  "category": "Messaging and Event Processing",
+  "level": "senior",
+  "estimatedMinutes": 35,
+  "tags": [
+    "backlog",
+    "duplicates",
+    "idempotency",
+    "at-least-once",
+    "backpressure"
+  ],
+  "summary": "The ledger can't always keep up, and your retries are double-charging customers.",
+  "statement": {
+    "situation": "Every order produces an event; the fleet emits about 6,000 events/s. A ledger service must record each one exactly once — charging a customer twice is a finance incident. The ledger can handle roughly 8,000 events/s but it occasionally stops for a short time (deploys, failovers), and the consuming side occasionally pauses and restarts for rebalancing.",
+    "symptoms": [
+      "Events are lost while the ledger is down",
+      "After the ledger recovers, the backlog takes a long time to drain",
+      "Finance finds some orders recorded twice after consumer restarts"
+    ],
+    "requirements": [
+      "No event may be lost",
+      "No customer may be charged twice (duplicates at the ledger ≤ 0.1%)",
+      "After a ledger outage the backlog must clear within two minutes"
+    ],
+    "constraints": [
+      "Budget: $2.00/hour including the ledger",
+      "The ledger service is fixed — you can't change or scale it",
+      "Processing a message costs a fixed amount of time per consumer"
+    ]
+  },
+  "learningObjectives": [
+    "At-least-once delivery and where duplicates come from",
+    "Idempotent consumers vs commit strategy",
+    "Headroom: capacity needed to drain a backlog",
+    "Buffering versus losing work during downstream outages"
+  ],
+  "references": [
+    {
+      "title": "Confluent: Exactly-once semantics in Apache Kafka",
+      "url": "https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/"
+    },
+    {
+      "title": "RabbitMQ: consumer acknowledgements and publisher confirms",
+      "url": "https://www.rabbitmq.com/docs/confirms"
+    },
+    {
+      "title": "Uber: reliable reprocessing and dead letter queues with Kafka",
+      "url": "https://www.uber.com/blog/reliable-reprocessing/"
+    },
+    {
+      "title": "Stripe: designing robust APIs with idempotency",
+      "url": "https://stripe.com/blog/idempotency"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "kafka",
+      "rabbitmq",
+      "idempotency-store",
+      "app-service",
+      "load-balancer",
+      "api-gateway"
+    ],
+    "budget": {
+      "maxCostPerHour": 2
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 0,
+          "payloadKB": 2,
+          "retries": 0,
+          "backoffMs": 100,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      },
+      {
+        "id": "ledger",
+        "kind": "ec2",
+        "label": "Ledger service",
+        "x": 960,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "count": 4,
+          "vcpu": 4,
+          "burstable": false,
+          "cpuCostMs": 2,
+          "networkMbps": 25000,
+          "queueLimit": 200,
+          "costPerHourEach": 0.1,
+          "creditsPerHour": 0,
+          "initialCredits": 0
+        }
+      }
+    ],
+    "kindDefaults": {
+      "kafka": {
+        "consumerRate": 2000,
+        "partitionRate": 10000
+      },
+      "rabbitmq": {
+        "consumerRate": 2000
+      }
+    },
+    "kindLocked": {
+      "kafka": [
+        "consumerRate",
+        "partitionRate",
+        "costBaseHour",
+        "costPerConsumerHour"
+      ],
+      "rabbitmq": [
+        "consumerRate",
+        "costBaseHour",
+        "costPerConsumerHour"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "outage",
+      "name": "Ledger stops for 20 s; consumers rebalance once",
+      "description": "6,000 events/s for 5 minutes. A consumer rebalance at t=60 s; the ledger is down from t=100 s to t=120 s.",
+      "scenario": {
+        "name": "Ledger outage",
+        "durationSec": 300,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 6000
+        },
+        "faults": [
+          {
+            "id": "rebal",
+            "kind": "rebalance",
+            "target": "kind:kafka",
+            "atSec": 60
+          },
+          {
+            "id": "ledger-down",
+            "kind": "kill-node",
+            "target": "ledger",
+            "atSec": 100,
+            "untilSec": 120
+          }
+        ],
+        "tickMs": 20
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "loss",
+      "label": "No events lost (errors ≤ 0.2%)"
+    },
+    {
+      "id": "dup",
+      "label": "Duplicates at the ledger ≤ 0.1%"
+    },
+    {
+      "id": "drain",
+      "label": "Delay back under 8 s within 2 minutes of the ledger returning"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

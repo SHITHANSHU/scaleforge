@@ -1,0 +1,46 @@
+{
+  "id": "cdc-lag-01",
+  "title": "Outbox + Debezium: WAL growing",
+  "level": "staff",
+  "tags": [
+    "debezium",
+    "cdc",
+    "postgres",
+    "kafka"
+  ],
+  "summary": "The connector can't keep up with writes.",
+  "locked": [
+    "c",
+    "pg"
+  ],
+  "criteria": [
+    {
+      "metric": "debezium.lagMs",
+      "op": "<",
+      "value": 2000,
+      "after": 40,
+      "label": "CDC lag under 2 s"
+    },
+    {
+      "metric": "debezium.walMB",
+      "op": "<",
+      "value": 500,
+      "after": 40,
+      "label": "Retained WAL under 500 MB"
+    }
+  ],
+  "hints": [
+    "Compare change rate to connector throughput.",
+    "What does a lagging connector do to the source's disk?"
+  ],
+  "scenario": {
+    "name": "2k writes/s",
+    "durationSec": 90,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 2000
+    },
+    "faults": []
+  }
+}

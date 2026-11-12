@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "id": "everyone-retries-reference",
+  "name": "Ten seconds of trouble, ten minutes of outage (reference)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 3,
+        "backoffMs": 100,
+        "backoffMultiplier": 1,
+        "jitter": 0,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 220
+    },
+    {
+      "id": "gw",
+      "kind": "api-gateway",
+      "config": {
+        "capacityRps": 1000,
+        "shedding": true,
+        "maxQueueAgeMs": 100,
+        "queueLimit": 200000,
+        "addedLatencyMs": 1,
+        "breaker": false,
+        "tripErrorPct": 50,
+        "minSamplesRps": 20,
+        "openSec": 10,
+        "probePct": 5,
+        "costPerHour": 0.1
+      },
+      "x": 240,
+      "y": 220
+    },
+    {
+      "id": "app",
+      "kind": "app-service",
+      "config": {
+        "pods": 5,
+        "maxPods": 40,
+        "vcpuPerPod": 2,
+        "cpuMsPerReq": 10,
+        "startupSec": 30,
+        "queueLimit": 20000,
+        "costPerPodHour": 0.09,
+        "hpa": false,
+        "hpaMetric": "cpu",
+        "hpaTarget": 0.6,
+        "hpaCooldownSec": 30,
+        "maxStepPods": 4,
+        "scaleDownDelaySec": 120,
+        "strategy": "rolling",
+        "maxSurgePct": 25,
+        "canaryPct": 10,
+        "canaryHoldSec": 60,
+        "autoRollback": false,
+        "rollbackErrorPct": 5,
+        "detectSec": 30,
+        "gracefulSec": 15,
+        "cacheFallback": false
+      },
+      "x": 480,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "gw",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "gw",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Burst",
+    "durationSec": 150,
+    "seed": 42,
+    "traffic": {
+      "type": "spike",
+      "baseRps": 700,
+      "spikeRps": 1600,
+      "atSec": 20,
+      "widthSec": 10
+    },
+    "faults": [],
+    "timeoutMs": 500
+  },
+  "updatedAt": 0
+}

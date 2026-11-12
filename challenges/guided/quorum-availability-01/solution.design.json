@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Survive a node loss without going stale (solution)",
+  "name": "Survive a node loss without going stale (solution)",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0.7,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      }
+    },
+    {
+      "id": "kv",
+      "kind": "quorum-kv",
+      "x": 300,
+      "y": 120,
+      "config": {
+        "nodes": 6,
+        "rf": 3,
+        "readCL": "quorum",
+        "writeCL": "quorum",
+        "nodeQps": 8000,
+        "baseMs": 3,
+        "hotKeyShare": 0,
+        "compactionEverySec": 120,
+        "compactionSec": 15,
+        "compactionSlowdownPct": 40,
+        "hintWindowSec": 180,
+        "hintReplayQps": 1500,
+        "staleWindowSec": 5,
+        "costPerNodeHour": 0.4,
+        "spreadRegions": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "kv",
+      "toPort": "in",
+      "protocol": "tcp",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "One node fails",
+    "durationSec": 30,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 2000
+    },
+    "faults": [
+      {
+        "id": "f",
+        "kind": "fail-node",
+        "target": "kv",
+        "atSec": 5,
+        "params": {
+          "index": 0
+        }
+      }
+    ]
+  },
+  "updatedAt": 0
+}

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "cache-gone-database-melts",
+  "title": "When the cache disappears",
+  "category": "Caching",
+  "level": "advanced",
+  "estimatedMinutes": 30,
+  "tags": [
+    "cache failure",
+    "cascading failure",
+    "load shedding",
+    "fail-open"
+  ],
+  "summary": "The layer that absorbs 95% of your reads just went away.",
+  "statement": {
+    "situation": "A content site serves 6,000 requests/s, almost all reads. A cache layer normally answers nearly everything, and the database behind it is sized for the leftover trickle. During a routine maintenance window the entire cache layer becomes unavailable for four minutes and then returns empty.",
+    "symptoms": [
+      "The database suddenly receives most of the traffic",
+      "Connections fill, latency rises, errors follow, and retries make it worse",
+      "When the cache returns it is empty and the database takes another hit"
+    ],
+    "requirements": [
+      "Keep the site usable during the outage — degrade, don't collapse",
+      "The database must survive, and the system must return to normal after the cache comes back",
+      "Retries from clients (two, with backoff) must not finish it off"
+    ],
+    "constraints": [
+      "Budget: $4.00/hour",
+      "Database machines have a fixed size",
+      "You can't change client retry behaviour"
+    ]
+  },
+  "learningObjectives": [
+    "Fail-open versus fail-closed",
+    "Bounding load on a dependency",
+    "Why the recovery (cold cache) is its own incident",
+    "Capacity for the worst case versus protecting capacity"
+  ],
+  "references": [
+    {
+      "title": "Facebook: Scaling Memcache at Facebook (NSDI '13)",
+      "url": "https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final170_update.pdf"
+    },
+    {
+      "title": "AWS Builders' Library: Timeouts, retries and backoff with jitter",
+      "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "load-balancer",
+      "api-gateway",
+      "app-service",
+      "redis",
+      "replicated-db",
+      "rate-limiter"
+    ],
+    "budget": {
+      "maxCostPerHour": 4
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 0.95,
+          "payloadKB": 2,
+          "retries": 2,
+          "backoffMs": 150,
+          "backoffMultiplier": 2,
+          "jitter": 0.5,
+          "retryBudgetPct": 100
+        }
+      }
+    ],
+    "kindDefaults": {
+      "app-service": {
+        "cpuMsPerReq": 3,
+        "vcpuPerPod": 2,
+        "startupSec": 40
+      },
+      "replicated-db": {
+        "readQps": 5000,
+        "writeQps": 1500,
+        "maxConnections": 400,
+        "costPerNodeHour": 0.35
+      },
+      "redis": {
+        "opsLimit": 80000
+      }
+    },
+    "kindLocked": {
+      "app-service": [
+        "cpuMsPerReq",
+        "vcpuPerPod",
+        "startupSec"
+      ],
+      "replicated-db": [
+        "readQps",
+        "writeQps",
+        "costPerNodeHour"
+      ],
+      "redis": [
+        "opsLimit"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "outage",
+      "name": "Cache layer lost for 4 minutes",
+      "description": "6,000 req/s. The whole cache layer fails at t=60 s and returns empty at t=300 s.",
+      "scenario": {
+        "name": "Cache outage",
+        "durationSec": 420,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 6000
+        },
+        "faults": [
+          {
+            "id": "down",
+            "kind": "kill-node",
+            "target": "kind:redis",
+            "atSec": 60,
+            "untilSec": 300
+          },
+          {
+            "id": "cold",
+            "kind": "flush-cache",
+            "target": "kind:redis",
+            "atSec": 300
+          }
+        ]
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "avail",
+      "label": "At least 80% of requests succeed during the outage"
+    },
+    {
+      "id": "db",
+      "label": "The database is never driven into collapse"
+    },
+    {
+      "id": "recover",
+      "label": "Back to ≥ 98% availability within 90 s of the cache returning"
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 800 ms"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

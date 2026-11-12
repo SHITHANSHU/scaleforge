@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Flash sale on a t2 fleet",
+  "name": "Flash sale on a t2 fleet",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0.9,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "app",
+      "kind": "ec2",
+      "x": 260,
+      "y": 120,
+      "label": "API",
+      "config": {
+        "count": 2,
+        "vcpu": 1,
+        "memoryGiB": 2,
+        "burstable": true,
+        "creditsPerHour": 12,
+        "initialCredits": 4,
+        "networkMbps": 125,
+        "cpuCostMs": 5,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 500,
+        "costPerHourEach": 0.023
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "320 rps sustained",
+    "durationSec": 900,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 320
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Reads that show old data (solution)",
+  "name": "Reads that show old data (solution)",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0.8,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      }
+    },
+    {
+      "id": "db",
+      "kind": "replicated-db",
+      "x": 300,
+      "y": 120,
+      "config": {
+        "replicas": 2,
+        "replication": "async",
+        "syncCopies": 1,
+        "syncRttMs": 2,
+        "shipLagSec": 0.3,
+        "readRouting": "lag-aware",
+        "maxStalenessSec": 1,
+        "writeLocalitySec": 5,
+        "readQps": 6000,
+        "writeQps": 2000,
+        "applyQps": 300,
+        "queryMs": 4,
+        "maxConnections": 300,
+        "poolMultiplex": 1,
+        "queueDuringFailover": false,
+        "queueLimit": 20000,
+        "failover": "auto",
+        "detectSec": 10,
+        "manualResponseSec": 300,
+        "promoteSec": 15,
+        "fencing": true,
+        "dataGB": 200,
+        "restoreMBps": 100,
+        "replayQps": 8000,
+        "snapshotIntervalSec": 600,
+        "walArchive": false,
+        "backupVerification": false,
+        "replicaPlacement": "same-region",
+        "costPerNodeHour": 0.35
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "tcp",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Write burst",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 3000
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

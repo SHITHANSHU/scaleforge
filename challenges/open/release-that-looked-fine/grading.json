@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "harder",
+      "name": "Release with 40% errors at higher load",
+      "scenario": {
+        "name": "Bad release, higher load",
+        "durationSec": 480,
+        "seed": 3,
+        "traffic": {
+          "type": "constant",
+          "rps": 3400
+        },
+        "faults": [
+          {
+            "id": "rel",
+            "kind": "release",
+            "target": "kind:app-service",
+            "atSec": 90,
+            "params": {
+              "errPct": 40,
+              "latencyX": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "good",
+      "name": "A good release (no defects)",
+      "scenario": {
+        "name": "Good release",
+        "durationSec": 480,
+        "seed": 2,
+        "traffic": {
+          "type": "constant",
+          "rps": 3000
+        },
+        "faults": [
+          {
+            "id": "rel",
+            "kind": "release",
+            "target": "kind:app-service",
+            "atSec": 60,
+            "params": {
+              "errPct": 0,
+              "latencyX": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "blast",
+      "label": "Errors ≤ 1.5% of all requests",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.errorRate",
+      "agg": "mean",
+      "op": "<=",
+      "value": 0.015,
+      "limit": 0.1
+    },
+    {
+      "id": "recover",
+      "label": "Healthy within 180 s of the release",
+      "hard": true,
+      "weight": 3,
+      "scenario": "bad",
+      "metric": "e2e.availability",
+      "agg": "settleSec",
+      "after": 60,
+      "settle": 0.99,
+      "op": "<=",
+      "value": 180,
+      "limit": 400
+    },
+    {
+      "id": "capacity",
+      "label": "A good release doesn't cost availability",
+      "hard": true,
+      "weight": 3,
+      "scenario": "good",
+      "metric": "e2e.errorRate",
+      "agg": "max",
+      "op": "<=",
+      "value": 0.01,
+      "limit": 0.2
+    }
+  ]
+}

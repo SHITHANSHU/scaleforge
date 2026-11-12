@@ -1,0 +1,5 @@
+Replication copies writes — all of them, including the bad ones — so it protects against hardware failure, not against corruption or an accidental delete. Only a backup that predates the damage can undo it, and two numbers decide whether that is good enough.
+
+Recovery point (how much you lose): restoring from a periodic snapshot loses everything written since that snapshot, up to a full interval plus the time to notice the problem. Archiving the write-ahead log lets you replay to just before the corruption, so you lose only the writes made while the corruption went unnoticed. Recovery time (how long you are down): restoring 150 GB at the available throughput takes tens of minutes before any log replay, and replay adds to that in proportion to how much log has accumulated since the base backup — so more frequent base backups shorten recovery.
+
+The third lever is trust. A backup job that fails silently gives you a recovery point of 'the beginning of time'. Verifying backups (a restore test, or at least checking each run) turns a silent failure into an alert and a fallback.

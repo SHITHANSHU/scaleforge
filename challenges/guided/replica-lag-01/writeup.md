@@ -1,0 +1,1 @@
+Lag-aware routing sends reads to replicas only while they are within the staleness bound, otherwise to the primary. Stale reads fall to near zero while most reads still avoid the primary. Trade-off: when lag is high the primary carries more reads.

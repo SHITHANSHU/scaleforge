@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "longer",
+      "name": "Longer outage (40 s) and a second rebalance",
+      "scenario": {
+        "name": "Longer outage",
+        "durationSec": 360,
+        "seed": 8,
+        "traffic": {
+          "type": "constant",
+          "rps": 6000
+        },
+        "faults": [
+          {
+            "id": "rebal",
+            "kind": "rebalance",
+            "target": "kind:kafka",
+            "atSec": 60
+          },
+          {
+            "id": "ledger-down",
+            "kind": "kill-node",
+            "target": "ledger",
+            "atSec": 120,
+            "untilSec": 160
+          },
+          {
+            "id": "rebal2",
+            "kind": "rebalance",
+            "target": "kind:kafka",
+            "atSec": 200
+          }
+        ],
+        "tickMs": 20
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "loss",
+      "label": "Event loss ≤ 0.2%",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.errorRate",
+      "agg": "mean",
+      "op": "<=",
+      "value": 0.002,
+      "limit": 0.05
+    },
+    {
+      "id": "dup",
+      "label": "Duplicates ≤ 0.1%",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.duplicateRate",
+      "agg": "mean",
+      "op": "<=",
+      "value": 0.001,
+      "limit": 0.02
+    },
+    {
+      "id": "drain",
+      "label": "p95 delay back under 8 s within 120 s of recovery",
+      "hard": true,
+      "weight": 3,
+      "scenario": "outage",
+      "metric": "e2e.p95",
+      "agg": "settleSec",
+      "after": 120,
+      "settle": 8000,
+      "settleWhen": "below",
+      "op": "<=",
+      "value": 120,
+      "limit": 300
+    },
+    {
+      "id": "drain-long",
+      "label": "Backlog cleared after the longer outage",
+      "weight": 2,
+      "scenario": "longer",
+      "metric": "e2e.p95",
+      "agg": "settleSec",
+      "after": 160,
+      "settle": 8000,
+      "settleWhen": "below",
+      "op": "<=",
+      "value": 120,
+      "limit": 300
+    }
+  ]
+}

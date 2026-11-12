@@ -1,0 +1,43 @@
+{
+  "id": "bloom-username-01",
+  "title": "Bloom filter for username availability",
+  "level": "mid",
+  "tags": [
+    "bloom-filter",
+    "database"
+  ],
+  "summary": "Most lookups are for unused names, yet all hit the DB.",
+  "locked": [
+    "db"
+  ],
+  "criteria": [
+    {
+      "metric": "postgres.utilization",
+      "op": "<",
+      "value": 0.5,
+      "after": 20,
+      "label": "DB below 50% utilization"
+    },
+    {
+      "metric": "bloom-filter.fpObserved",
+      "op": "<",
+      "value": 0.03,
+      "after": 20,
+      "label": "Observed false positives under 3%"
+    }
+  ],
+  "hints": [
+    "The filter was sized for far fewer names than it holds.",
+    "What happens to the false-positive rate when you insert more than n items?"
+  ],
+  "scenario": {
+    "name": "Signup checks",
+    "durationSec": 40,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 3000
+    },
+    "faults": []
+  }
+}

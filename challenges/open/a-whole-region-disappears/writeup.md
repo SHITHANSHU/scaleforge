@@ -1,0 +1,5 @@
+The shape of the answer is dictated by what lives where. Anything in Region A is gone, so the surviving region needs enough application capacity already running (static stability — scaling up during an outage depends on control planes that may be impaired) and a database copy that is both outside Region A and current.
+
+The data decision is a latency/durability trade. A synchronous copy in Region B guarantees no acknowledged write is lost, at the cost of an extra 80 ms on every write. An asynchronous copy keeps writes fast but loses whatever had not yet shipped — the shipping delay times the write rate — which is how real regional failovers lose data. The requirement of ≤ 200 lost writes rules out a loose async setup.
+
+Traffic must also move: an active-passive balancer fails over after health checks notice, so detection time is part of your recovery time; clients that cache old answers stretch it further. Active-active spreads load across both regions all the time and can recover faster, but needs the surviving region to carry the whole load.

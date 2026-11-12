@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "node-loss",
+      "name": "A search node is lost mid-run",
+      "scenario": {
+        "name": "Node lost",
+        "durationSec": 300,
+        "seed": 6,
+        "traffic": {
+          "type": "constant",
+          "rps": 10000
+        },
+        "faults": [
+          {
+            "id": "n",
+            "kind": "fail-node",
+            "target": "catalog",
+            "atSec": 120,
+            "params": {
+              "index": 0
+            }
+          }
+        ],
+        "tickMs": 20
+      }
+    },
+    {
+      "id": "heavier",
+      "name": "Feed 30% heavier",
+      "scenario": {
+        "name": "Heavier feed",
+        "durationSec": 300,
+        "seed": 7,
+        "traffic": {
+          "type": "constant",
+          "rps": 12000
+        },
+        "faults": [],
+        "tickMs": 20
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "errors",
+      "label": "Errors ≤ 0.5%",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.errorRate",
+      "agg": "mean",
+      "after": 20,
+      "op": "<=",
+      "value": 0.005,
+      "limit": 0.1
+    },
+    {
+      "id": "latency",
+      "label": "p99 ≤ 250 ms",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "e2e.p99",
+      "agg": "mean",
+      "after": 30,
+      "op": "<=",
+      "value": 250,
+      "limit": 2000
+    },
+    {
+      "id": "fresh",
+      "label": "Result freshness ≤ 10 s",
+      "weight": 3,
+      "scenario": "all",
+      "metric": "search-cluster.freshnessSec",
+      "agg": "max",
+      "after": 30,
+      "op": "<=",
+      "value": 10,
+      "limit": 120
+    }
+  ]
+}

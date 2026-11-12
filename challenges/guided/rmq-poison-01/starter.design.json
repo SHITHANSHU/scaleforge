@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Poison message loop in RabbitMQ",
+  "name": "Poison message loop in RabbitMQ",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "q",
+      "kind": "rabbitmq",
+      "x": 300,
+      "y": 120,
+      "config": {
+        "exchange": "direct",
+        "queues": 1,
+        "matchedQueues": 1,
+        "consumers": 2,
+        "consumerRate": 1000,
+        "prefetch": 50,
+        "ackMode": "manual",
+        "dlx": false,
+        "maxRedeliveries": 3,
+        "poisonRate": 0.08,
+        "messageTtlSec": 0,
+        "queueLimit": 100000,
+        "watermarkMsgs": 400000,
+        "rttMs": 4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "q",
+      "toPort": "publish",
+      "protocol": "tcp",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "1.5k msg/s, 8% poison",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 1500
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

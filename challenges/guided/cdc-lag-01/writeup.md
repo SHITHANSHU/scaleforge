@@ -1,0 +1,1 @@
+Connector throughput must exceed peak write rate with headroom; otherwise the source retains WAL until disk fills. Tune batch/queue sizes or split tables across connectors. Trade-off: more parallelism means weaker global ordering.

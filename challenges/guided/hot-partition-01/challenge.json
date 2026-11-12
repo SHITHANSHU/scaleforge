@@ -1,0 +1,45 @@
+{
+  "id": "hot-partition-01",
+  "title": "Hot partition at 10× Black Friday",
+  "level": "staff",
+  "tags": [
+    "kafka",
+    "partitioning",
+    "skew"
+  ],
+  "summary": "One key dominates and one partition saturates.",
+  "locked": [
+    "c"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.01,
+      "after": 20,
+      "label": "Errors under 1%"
+    },
+    {
+      "metric": "kafka.lagMax",
+      "op": "<",
+      "value": 20000,
+      "after": 40,
+      "label": "Max lag under 20,000"
+    }
+  ],
+  "hints": [
+    "Where does 60% of traffic go?",
+    "Salting a key spreads it across partitions.",
+    "More partitions alone don't fix a single hot key."
+  ],
+  "scenario": {
+    "name": "Black Friday",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 30000
+    },
+    "faults": []
+  }
+}

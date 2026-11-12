@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "search-slows-during-import",
+  "title": "Search is fast — until the catalogue import runs",
+  "category": "Performance Engineering",
+  "level": "advanced",
+  "estimatedMinutes": 35,
+  "tags": [
+    "search",
+    "indexing",
+    "sharding",
+    "resource contention",
+    "backpressure"
+  ],
+  "summary": "Query latency triples whenever documents are being indexed.",
+  "statement": {
+    "situation": "Your product search serves about 600 queries/s over 20 million documents. A supplier feed continuously pushes around 6,000 document updates per second. The search cluster is already deployed in front of you (three nodes) but the people who run it say it falls over whenever the feed is running at full speed.",
+    "symptoms": [
+      "Search latency spikes while the feed is active",
+      "New products take minutes to become searchable",
+      "Occasionally queries are rejected with 429s"
+    ],
+    "requirements": [
+      "Search p99 under 250 ms while the feed runs",
+      "New documents searchable within 10 seconds",
+      "No queries rejected"
+    ],
+    "constraints": [
+      "Budget: $4.00/hour including the cluster",
+      "The cluster's node size, document count and per-query cost are fixed",
+      "You can change how the cluster is shaped and what sits between the feed and it"
+    ]
+  },
+  "learningObjectives": [
+    "Indexing and query workloads competing for the same resources",
+    "Shard count trade-offs: too few vs too many",
+    "Freshness vs indexing cost (refresh interval)",
+    "Buffering and shaping ingest so it can't starve queries"
+  ],
+  "references": [
+    {
+      "title": "Elastic docs: size your shards",
+      "url": "https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/size-shards"
+    },
+    {
+      "title": "Elastic docs: tune for indexing speed",
+      "url": "https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/indexing-speed"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "search-cluster",
+      "kafka",
+      "rabbitmq",
+      "rate-limiter",
+      "api-gateway",
+      "load-balancer"
+    ],
+    "budget": {
+      "maxCostPerHour": 4
+    },
+    "fixed": [
+      {
+        "id": "shoppers",
+        "kind": "client",
+        "label": "Shoppers (queries)",
+        "x": 0,
+        "y": 140,
+        "locked": true,
+        "config": {
+          "share": 6,
+          "readRatio": 1
+        }
+      },
+      {
+        "id": "importer",
+        "kind": "client",
+        "label": "Catalog import (documents)",
+        "x": 0,
+        "y": 320,
+        "locked": true,
+        "config": {
+          "share": 60,
+          "readRatio": 0
+        }
+      },
+      {
+        "id": "catalog",
+        "kind": "search-cluster",
+        "label": "Product search",
+        "x": 700,
+        "y": 220,
+        "locked": [
+          "queryCostMs",
+          "indexCostMs",
+          "nodeCpu",
+          "costPerNodeHour",
+          "docsMillions",
+          "heavyQueryPct",
+          "heavyMultiplier",
+          "perShardOverheadMs"
+        ],
+        "config": {
+          "docsMillions": 20,
+          "nodeCpu": 8,
+          "queryCostMs": 0.8,
+          "indexCostMs": 0.6,
+          "heavyQueryPct": 6,
+          "heavyMultiplier": 12,
+          "perShardOverheadMs": 0.15,
+          "costPerNodeHour": 0.5,
+          "dataNodes": 3,
+          "shards": 6,
+          "replicas": 1
+        }
+      }
+    ],
+    "fixedEdges": [
+      {
+        "id": "fx-q",
+        "from": "shoppers",
+        "fromPort": "out",
+        "to": "catalog",
+        "toPort": "query",
+        "protocol": "http",
+        "latencyMs": 1
+      },
+      {
+        "id": "fx-i",
+        "from": "importer",
+        "fromPort": "out",
+        "to": "catalog",
+        "toPort": "index",
+        "protocol": "http",
+        "latencyMs": 1
+      }
+    ],
+    "kindDefaults": {
+      "kafka": {
+        "consumerRate": 2000
+      },
+      "rabbitmq": {
+        "consumerRate": 2000
+      }
+    },
+    "kindLocked": {
+      "kafka": [
+        "consumerRate"
+      ],
+      "rabbitmq": [
+        "consumerRate"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "feed",
+      "name": "Continuous feed at full speed",
+      "description": "600 queries/s while 6,000 documents/s are being indexed, for 5 minutes.",
+      "scenario": {
+        "name": "Feed running",
+        "durationSec": 300,
+        "seed": 42,
+        "traffic": {
+          "type": "constant",
+          "rps": 10000
+        },
+        "faults": [],
+        "tickMs": 20
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "latency",
+      "label": "Search p99 ≤ 250 ms"
+    },
+    {
+      "id": "fresh",
+      "label": "New documents searchable within 10 s"
+    },
+    {
+      "id": "reject",
+      "label": "No queries rejected (errors ≤ 0.5%)"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

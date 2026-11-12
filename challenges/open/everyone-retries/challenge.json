@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "kind": "open",
+  "id": "everyone-retries",
+  "title": "Ten seconds of trouble, ten minutes of outage",
+  "category": "Fault Tolerance",
+  "level": "staff",
+  "estimatedMinutes": 40,
+  "tags": [
+    "retry storm",
+    "metastable failure",
+    "load shedding",
+    "overload"
+  ],
+  "summary": "A short blip is over, but the system never recovers.",
+  "statement": {
+    "situation": "An internal API handles about 700 requests/s with comfortable headroom. For ten seconds a burst of extra traffic pushes it past its limit. The burst ends, yet the service stays overloaded and keeps failing for minutes. The clients — hundreds of third-party integrations you don't control — retry failed or slow calls up to three times, 100 ms apart, and time out after half a second.",
+    "symptoms": [
+      "Error rate stays high long after the trigger ended",
+      "Latency is enormous for requests that do succeed",
+      "Total attempts are several times the real demand"
+    ],
+    "requirements": [
+      "The service must return to normal on its own shortly after the burst",
+      "Retries must not be able to sustain the overload",
+      "Don't turn away traffic that fits within capacity"
+    ],
+    "constraints": [
+      "Budget: $1.00/hour",
+      "Clients can't be changed",
+      "The application's server accepts connections into a very deep backlog (you can't shrink it)"
+    ]
+  },
+  "learningObjectives": [
+    "Metastable failures: a trigger that outlives itself",
+    "Stale work and timeouts",
+    "Bounding queues by age, not size",
+    "Why capacity alone doesn't fix retry amplification"
+  ],
+  "references": [
+    {
+      "title": "Google SRE book: Addressing cascading failures",
+      "url": "https://sre.google/sre-book/addressing-cascading-failures/"
+    },
+    {
+      "title": "Google SRE book: Handling overload",
+      "url": "https://sre.google/sre-book/handling-overload/"
+    },
+    {
+      "title": "AWS Builders' Library: Timeouts, retries and backoff with jitter",
+      "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+    }
+  ],
+  "resources": {
+    "allowed": [
+      "load-balancer",
+      "api-gateway",
+      "app-service",
+      "rate-limiter"
+    ],
+    "budget": {
+      "maxCostPerHour": 1
+    },
+    "fixed": [
+      {
+        "id": "users",
+        "kind": "client",
+        "label": "Users",
+        "x": 0,
+        "y": 220,
+        "locked": true,
+        "config": {
+          "share": 100,
+          "readRatio": 1,
+          "payloadKB": 2,
+          "retries": 3,
+          "backoffMs": 100,
+          "backoffMultiplier": 1,
+          "jitter": 0,
+          "retryBudgetPct": 100
+        }
+      }
+    ],
+    "kindDefaults": {
+      "app-service": {
+        "cpuMsPerReq": 10,
+        "vcpuPerPod": 2,
+        "startupSec": 30,
+        "queueLimit": 20000,
+        "pods": 4,
+        "hpa": false
+      }
+    },
+    "kindLocked": {
+      "app-service": [
+        "cpuMsPerReq",
+        "vcpuPerPod",
+        "startupSec",
+        "queueLimit"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "blip",
+      "name": "A 10-second burst",
+      "description": "Normal 700 req/s. For 10 s at t=20 the load rises to 1,600 req/s. Clients time out after 500 ms.",
+      "scenario": {
+        "name": "Burst",
+        "durationSec": 150,
+        "seed": 42,
+        "traffic": {
+          "type": "spike",
+          "baseRps": 700,
+          "spikeRps": 1600,
+          "atSec": 20,
+          "widthSec": 10
+        },
+        "faults": [],
+        "timeoutMs": 500
+      }
+    }
+  ],
+  "successCriteria": [
+    {
+      "id": "recover",
+      "label": "Back to ≥ 98% success within 40 s of the burst ending"
+    },
+    {
+      "id": "retry",
+      "label": "Retries never exceed 1.5× offered load"
+    },
+    {
+      "id": "steady",
+      "label": "Normal traffic is served normally afterwards (p99 ≤ 300 ms)"
+    },
+    {
+      "id": "cost",
+      "label": "Within budget"
+    }
+  ]
+}

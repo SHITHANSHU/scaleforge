@@ -1,0 +1,1 @@
+Set n above the real item count (with headroom) so the bit array is large enough. The filter then rejects nearly all absent names locally and only ~1% leak to the DB. Cost: about 5 bits more per item and no deletes.

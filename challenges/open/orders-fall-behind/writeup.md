@@ -1,0 +1,5 @@
+Three separate things go wrong at once. The ledger outage loses events unless something buffers them — a log or queue between producers and the ledger turns an outage into lag. The lag then only clears if consumers have headroom: with capacity equal to the arrival rate a backlog never drains, so you need meaningfully more processing capacity than input.
+
+Duplicates come from at-least-once delivery. After a rebalance an auto-committing consumer replays everything since its last commit, which is seconds of traffic. You can shrink that window (commit after processing, so only the in-flight batch is replayed) or make the ledger path idempotent with a store of recent keys that absorbs replays. The first is cheaper; the second is robust to every source of duplicates, including ones you didn't think of, but its retention window must be longer than the longest redelivery delay.
+
+Either route works; message brokers differ in what they replay, which is why the guard that sits next to the ledger is the one that holds under every failure.

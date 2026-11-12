@@ -1,0 +1,5 @@
+Autoscaling cannot be the whole answer when the spike arrives in a single step: new instances take a minute, so the first minute has to be survived by something else. There are two honest strategies. Offload — a CDN or cache absorbs the cacheable majority of reads so origin capacity needed drops by an order of magnitude — and protect — a gateway that sheds work by queue age keeps the servers inside their capacity instead of letting a deep queue turn every request into a timeout and every timeout into two more requests.
+
+Buying your way out (pre-provisioning for 9,000 req/s) is exactly what the budget rules out here, and it wouldn't help if the next spike were bigger. Autoscaling on queue wait reacts to backlog sooner than CPU does, but still arrives late; it is the follow-up, not the first line of defence.
+
+Multiple designs pass: CDN + gateway + autoscaled app tier, cache + gateway, or heavy shedding with fewer servers if you accept lower availability. They differ in cost and in how much of the surge is served rather than rejected.

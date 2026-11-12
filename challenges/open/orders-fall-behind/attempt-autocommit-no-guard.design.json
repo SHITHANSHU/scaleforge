@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "orders-fall-behind-autocommit-no-guard",
+  "name": "Orders are piling up, and some are charged twice (autocommit-no-guard)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 0,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 220
+    },
+    {
+      "id": "ledger",
+      "kind": "ec2",
+      "label": "Ledger service",
+      "config": {
+        "count": 4,
+        "vcpu": 4,
+        "memoryGiB": 1,
+        "burstable": false,
+        "creditsPerHour": 0,
+        "initialCredits": 0,
+        "networkMbps": 25000,
+        "cpuCostMs": 2,
+        "payloadKB": 8,
+        "memoryPerConnMB": 2,
+        "queueLimit": 200,
+        "costPerHourEach": 0.1
+      },
+      "x": 960,
+      "y": 220
+    },
+    {
+      "id": "k",
+      "kind": "kafka",
+      "config": {
+        "partitions": 12,
+        "replicationFactor": 3,
+        "retentionHours": 168,
+        "partitionRate": 10000,
+        "hotKeyShare": 0,
+        "consumers": 6,
+        "consumerRate": 2000,
+        "maxPollRecords": 500,
+        "commitMode": "auto",
+        "commitIntervalSec": 5,
+        "retryOnFailure": true,
+        "costBaseHour": 0.6,
+        "costPerConsumerHour": 0.05,
+        "rebalancePauseSec": 5,
+        "produceLatencyMs": 5
+      },
+      "x": 400,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "k",
+      "toPort": "produce",
+      "protocol": "tcp",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "k",
+      "fromPort": "consume",
+      "to": "ledger",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Ledger outage",
+    "durationSec": 300,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 6000
+    },
+    "faults": [
+      {
+        "id": "rebal",
+        "kind": "rebalance",
+        "target": "kind:kafka",
+        "atSec": 60
+      },
+      {
+        "id": "ledger-down",
+        "kind": "kill-node",
+        "target": "ledger",
+        "atSec": 100,
+        "untilSec": 120
+      }
+    ],
+    "tickMs": 20
+  },
+  "updatedAt": 0
+}

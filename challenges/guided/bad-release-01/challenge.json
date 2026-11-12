@@ -1,0 +1,47 @@
+{
+  "id": "bad-release-01",
+  "title": "Contain a bad release",
+  "level": "senior",
+  "tags": [
+    "canary",
+    "rollback",
+    "blast radius"
+  ],
+  "summary": "A release returns errors but passes health checks.",
+  "locked": [
+    "c"
+  ],
+  "criteria": [
+    {
+      "metric": "e2e.errorRate",
+      "op": "<",
+      "value": 0.08,
+      "label": "Peak error rate under 8% (blast radius)"
+    }
+  ],
+  "hints": [
+    "How much traffic sees the new version, and for how long?",
+    "A canary limits exposure; something must notice the errors.",
+    "Turn on automatic rollback."
+  ],
+  "scenario": {
+    "name": "Release at 60 s",
+    "durationSec": 300,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 2000
+    },
+    "faults": [
+      {
+        "id": "rel",
+        "kind": "release",
+        "target": "app",
+        "atSec": 60,
+        "params": {
+          "errPct": 30
+        }
+      }
+    ]
+  }
+}

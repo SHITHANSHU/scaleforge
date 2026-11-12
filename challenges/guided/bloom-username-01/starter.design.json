@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Bloom filter for username availability",
+  "name": "Bloom filter for username availability",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "b",
+      "kind": "bloom-filter",
+      "x": 260,
+      "y": 120,
+      "config": {
+        "expectedItems": 100000,
+        "fpTarget": 0.01,
+        "loadedItems": 400000,
+        "insertsPerSec": 0,
+        "existsRatio": 0.15,
+        "lookupMs": 0.3
+      }
+    },
+    {
+      "id": "db",
+      "kind": "postgres",
+      "x": 520,
+      "y": 120,
+      "config": {
+        "maxConnections": 100,
+        "readQps": 4000,
+        "writeQps": 1200,
+        "readReplicas": 0,
+        "indexes": 3,
+        "queryMs": 4,
+        "replicaLagBaseMs": 20
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "b",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "b",
+      "fromPort": "maybe",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Signup checks",
+    "durationSec": 40,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 3000
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

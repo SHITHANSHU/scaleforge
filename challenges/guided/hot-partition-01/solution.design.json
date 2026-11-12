@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "starter-Hot partition at 10× Black Friday (solution)",
+  "name": "Hot partition at 10× Black Friday (solution)",
+  "nodes": [
+    {
+      "id": "c",
+      "kind": "client",
+      "x": 0,
+      "y": 120,
+      "config": {
+        "share": 100,
+        "readRatio": 0,
+        "payloadKB": 2
+      }
+    },
+    {
+      "id": "k",
+      "kind": "kafka",
+      "x": 300,
+      "y": 120,
+      "config": {
+        "partitions": 12,
+        "replicationFactor": 3,
+        "retentionHours": 168,
+        "partitionRate": 10000,
+        "hotKeyShare": 0.1,
+        "consumers": 12,
+        "consumerRate": 8000,
+        "maxPollRecords": 500,
+        "commitMode": "auto",
+        "rebalancePauseSec": 5,
+        "produceLatencyMs": 5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c",
+      "fromPort": "out",
+      "to": "k",
+      "toPort": "produce",
+      "protocol": "tcp",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Black Friday",
+    "durationSec": 60,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 30000
+    },
+    "faults": []
+  },
+  "updatedAt": 0
+}

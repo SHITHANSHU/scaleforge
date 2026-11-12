@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 2,
+  "passScore": 70,
+  "hiddenScenarios": [
+    {
+      "id": "silent-backups",
+      "name": "Same incident, but snapshot jobs had been failing silently",
+      "scenario": {
+        "name": "Silent backup failure",
+        "durationSec": 3600,
+        "seed": 3,
+        "traffic": {
+          "type": "constant",
+          "rps": 1800
+        },
+        "faults": [
+          {
+            "id": "bad",
+            "kind": "bad-write",
+            "target": "kind:replicated-db",
+            "atSec": 1000,
+            "params": {
+              "detectSec": 300
+            }
+          },
+          {
+            "id": "silent",
+            "kind": "backup-silent-fail",
+            "target": "kind:replicated-db",
+            "atSec": 0
+          }
+        ],
+        "tickMs": 50
+      }
+    },
+    {
+      "id": "late",
+      "name": "Corruption much later in the day",
+      "scenario": {
+        "name": "Late corruption",
+        "durationSec": 5400,
+        "seed": 4,
+        "traffic": {
+          "type": "constant",
+          "rps": 1800
+        },
+        "faults": [
+          {
+            "id": "bad",
+            "kind": "bad-write",
+            "target": "kind:replicated-db",
+            "atSec": 3000,
+            "params": {
+              "detectSec": 300
+            }
+          }
+        ],
+        "tickMs": 50
+      }
+    }
+  ],
+  "criteria": [
+    {
+      "id": "rpo",
+      "label": "Lost writes ≤ 480,000",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "replicated-db.dataLoss",
+      "agg": "last",
+      "nodeAgg": "sum",
+      "op": "<=",
+      "value": 480000,
+      "limit": 2000000
+    },
+    {
+      "id": "rto",
+      "label": "Write downtime ≤ 30 min",
+      "hard": true,
+      "weight": 4,
+      "scenario": "all",
+      "metric": "replicated-db.downtimeSec",
+      "agg": "last",
+      "nodeAgg": "sum",
+      "op": "<=",
+      "value": 1800,
+      "limit": 5400
+    },
+    {
+      "id": "recovered",
+      "label": "Data is no longer corrupt at the end",
+      "hard": true,
+      "weight": 2,
+      "scenario": "all",
+      "metric": "replicated-db.corrupt",
+      "agg": "last",
+      "op": "<=",
+      "value": 0
+    }
+  ]
+}

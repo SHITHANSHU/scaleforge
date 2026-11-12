@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "a-whole-region-disappears-active-active-sync",
+  "name": "A whole region disappears (active-active-sync)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 0.9,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 260
+    },
+    {
+      "id": "lb",
+      "kind": "load-balancer",
+      "config": {
+        "algorithm": "round-robin",
+        "maxRps": 50000,
+        "healthChecks": true,
+        "checkIntervalSec": 2,
+        "unhealthyThreshold": 2,
+        "addedLatencyMs": 1,
+        "dnsTtlSec": 0,
+        "staleClientPct": 0,
+        "costPerHour": 0.05
+      },
+      "x": 120,
+      "y": 260
+    },
+    {
+      "id": "appA",
+      "kind": "app-service",
+      "config": {
+        "pods": 16,
+        "maxPods": 40,
+        "vcpuPerPod": 2,
+        "cpuMsPerReq": 6,
+        "startupSec": 30,
+        "queueLimit": 400,
+        "costPerPodHour": 0.09,
+        "hpa": false,
+        "hpaMetric": "cpu",
+        "hpaTarget": 0.6,
+        "hpaCooldownSec": 30,
+        "maxStepPods": 4,
+        "scaleDownDelaySec": 120,
+        "strategy": "rolling",
+        "maxSurgePct": 25,
+        "canaryPct": 10,
+        "canaryHoldSec": 60,
+        "autoRollback": false,
+        "rollbackErrorPct": 5,
+        "detectSec": 30,
+        "gracefulSec": 15,
+        "cacheFallback": false
+      },
+      "parentId": "regionA",
+      "x": 340,
+      "y": 160
+    },
+    {
+      "id": "appB",
+      "kind": "app-service",
+      "config": {
+        "pods": 16,
+        "maxPods": 40,
+        "vcpuPerPod": 2,
+        "cpuMsPerReq": 6,
+        "startupSec": 30,
+        "queueLimit": 400,
+        "costPerPodHour": 0.09,
+        "hpa": false,
+        "hpaMetric": "cpu",
+        "hpaTarget": 0.6,
+        "hpaCooldownSec": 30,
+        "maxStepPods": 4,
+        "scaleDownDelaySec": 120,
+        "strategy": "rolling",
+        "maxSurgePct": 25,
+        "canaryPct": 10,
+        "canaryHoldSec": 60,
+        "autoRollback": false,
+        "rollbackErrorPct": 5,
+        "detectSec": 30,
+        "gracefulSec": 15,
+        "cacheFallback": false
+      },
+      "parentId": "regionB",
+      "x": 960,
+      "y": 160
+    },
+    {
+      "id": "db",
+      "kind": "replicated-db",
+      "config": {
+        "replicas": 2,
+        "replication": "sync",
+        "syncCopies": 1,
+        "syncRttMs": 80,
+        "shipLagSec": 0.3,
+        "readRouting": "replicas",
+        "maxStalenessSec": 2,
+        "writeLocalitySec": 5,
+        "readQps": 6000,
+        "writeQps": 1500,
+        "applyQps": 3000,
+        "queryMs": 4,
+        "maxConnections": 300,
+        "poolMultiplex": 1,
+        "queueDuringFailover": false,
+        "queueLimit": 20000,
+        "failover": "auto",
+        "detectSec": 5,
+        "manualResponseSec": 300,
+        "promoteSec": 10,
+        "fencing": true,
+        "dataGB": 200,
+        "restoreMBps": 100,
+        "replayQps": 8000,
+        "snapshotIntervalSec": 600,
+        "walArchive": false,
+        "backupVerification": false,
+        "replicaPlacement": "other-region",
+        "costPerNodeHour": 0.35
+      },
+      "parentId": "regionA",
+      "x": 560,
+      "y": 340
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "lb",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e2",
+      "from": "lb",
+      "fromPort": "out",
+      "to": "appA",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e3",
+      "from": "lb",
+      "fromPort": "out",
+      "to": "appB",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    },
+    {
+      "id": "e4",
+      "from": "appA",
+      "fromPort": "db",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    },
+    {
+      "id": "e5",
+      "from": "appB",
+      "fromPort": "db",
+      "to": "db",
+      "toPort": "in",
+      "protocol": "database",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Region A lost",
+    "durationSec": 360,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 4000
+    },
+    "faults": [
+      {
+        "id": "regionA-down",
+        "kind": "kill-node",
+        "target": "regionA",
+        "atSec": 90
+      }
+    ],
+    "regionRttMs": 80
+  },
+  "updatedAt": 0
+}

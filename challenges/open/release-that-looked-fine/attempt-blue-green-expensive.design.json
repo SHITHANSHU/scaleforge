@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "release-that-looked-fine-blue-green-expensive",
+  "name": "The release that passed every check (blue-green-expensive)",
+  "nodes": [
+    {
+      "id": "users",
+      "kind": "client",
+      "label": "Users",
+      "config": {
+        "share": 100,
+        "readRatio": 1,
+        "payloadKB": 2,
+        "retries": 0,
+        "backoffMs": 100,
+        "backoffMultiplier": 2,
+        "jitter": 0.5,
+        "retryBudgetPct": 100
+      },
+      "x": 0,
+      "y": 220
+    },
+    {
+      "id": "app",
+      "kind": "app-service",
+      "config": {
+        "pods": 18,
+        "maxPods": 40,
+        "vcpuPerPod": 2,
+        "cpuMsPerReq": 10,
+        "startupSec": 30,
+        "queueLimit": 400,
+        "costPerPodHour": 0.09,
+        "hpa": false,
+        "hpaMetric": "cpu",
+        "hpaTarget": 0.6,
+        "hpaCooldownSec": 30,
+        "maxStepPods": 4,
+        "scaleDownDelaySec": 120,
+        "strategy": "bluegreen",
+        "maxSurgePct": 25,
+        "canaryPct": 10,
+        "canaryHoldSec": 60,
+        "autoRollback": true,
+        "rollbackErrorPct": 5,
+        "detectSec": 15,
+        "gracefulSec": 15,
+        "cacheFallback": false
+      },
+      "x": 300,
+      "y": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "users",
+      "fromPort": "out",
+      "to": "app",
+      "toPort": "in",
+      "protocol": "http",
+      "latencyMs": 1
+    }
+  ],
+  "scenario": {
+    "name": "Bad release",
+    "durationSec": 480,
+    "seed": 42,
+    "traffic": {
+      "type": "constant",
+      "rps": 3000
+    },
+    "faults": [
+      {
+        "id": "rel",
+        "kind": "release",
+        "target": "kind:app-service",
+        "atSec": 60,
+        "params": {
+          "errPct": 25,
+          "latencyX": 1
+        }
+      }
+    ]
+  },
+  "updatedAt": 0
+}
