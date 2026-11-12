@@ -1,1 +1,1 @@
-{ "extends": "../../tsconfig.base.json", "compilerOptions": { "lib": ["ES2022"], "types": [] }, "include": ["**/*.ts"], "exclude": ["node_modules"] }
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "lib": ["ES2022"], "types": ["node"] }, "include": ["**/*.ts"], "exclude": ["node_modules"] }
